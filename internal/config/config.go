@@ -211,59 +211,6 @@ func Load(path string) (*Theme, error) {
 	}, nil
 }
 
-func parseMeta(body *hclsyntax.Body, theme *Theme) error {
-	for _, block := range body.Blocks {
-		if block.Type != "meta" {
-			continue
-		}
-		attrs, diags := block.Body.JustAttributes()
-		if diags.HasErrors() {
-			return fmt.Errorf("parsing meta: %s", diags.Error())
-		}
-		for name, attr := range attrs {
-			val, diags := attr.Expr.Value(nil)
-			if diags.HasErrors() {
-				return fmt.Errorf("evaluating meta.%s: %s", name, diags.Error())
-			}
-			switch name {
-			case "name":
-				theme.Meta.Name = val.AsString()
-			case "author":
-				theme.Meta.Author = val.AsString()
-			case "appearance":
-				theme.Meta.Appearance = val.AsString()
-			}
-		}
-		return nil
-	}
-	return nil
-}
-
-func parsePalette(body *hclsyntax.Body, theme *Theme) error {
-	for _, block := range body.Blocks {
-		if block.Type != "palette" {
-			continue
-		}
-		attrs, diags := block.Body.JustAttributes()
-		if diags.HasErrors() {
-			return fmt.Errorf("parsing palette: %s", diags.Error())
-		}
-		for name, attr := range attrs {
-			val, diags := attr.Expr.Value(nil)
-			if diags.HasErrors() {
-				return fmt.Errorf("evaluating palette.%s: %s", name, diags.Error())
-			}
-			c, err := color.ParseHex(val.AsString())
-			if err != nil {
-				return fmt.Errorf("palette.%s: %w", name, err)
-			}
-			theme.Palette[name] = c
-		}
-		return nil
-	}
-	return fmt.Errorf("no palette block found")
-}
-
 func buildEvalContext(palette map[string]color.Color) *hcl.EvalContext {
 	vals := make(map[string]cty.Value, len(palette))
 
@@ -282,45 +229,6 @@ func buildEvalContext(palette map[string]color.Color) *hcl.EvalContext {
 			"palette": cty.ObjectVal(vals),
 		},
 	}
-}
-
-// parseColorBlock parses a flat block (theme or ansi) where all attributes
-// reference palette colors.
-func parseColorBlock(body *hclsyntax.Body, blockType string, ctx *hcl.EvalContext, dest map[string]color.Color) error {
-	for _, block := range body.Blocks {
-		if block.Type != blockType {
-			continue
-		}
-		attrs, diags := block.Body.JustAttributes()
-		if diags.HasErrors() {
-			return fmt.Errorf("parsing %s: %s", blockType, diags.Error())
-		}
-		for name, attr := range attrs {
-			val, diags := attr.Expr.Value(ctx)
-			if diags.HasErrors() {
-				return fmt.Errorf("evaluating %s.%s: %s", blockType, name, diags.Error())
-			}
-			c, err := color.ParseHex(val.AsString())
-			if err != nil {
-				return fmt.Errorf("%s.%s: %w", blockType, name, err)
-			}
-			dest[name] = c
-		}
-		return nil
-	}
-	return nil
-}
-
-// parseSyntaxBlock parses the syntax block, handling nested sub-blocks
-// to build a ColorTree with dotted scope names.
-func parseSyntaxBlock(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.ColorTree) error {
-	for _, block := range body.Blocks {
-		if block.Type != "syntax" {
-			continue
-		}
-		return parseSyntaxBody(block.Body, ctx, dest)
-	}
-	return nil
 }
 
 // parseSyntax extracts and parses the syntax block from an hcl.Body.
