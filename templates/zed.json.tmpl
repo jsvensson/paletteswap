@@ -36,18 +36,90 @@
         "terminal.ansi.bright_cyan": "{{ hex .ANSI.bright_cyan }}",
         "terminal.ansi.bright_white": "{{ hex .ANSI.bright_white }}",
         "syntax": {
-          "keyword": { "color": "{{ hex (index .Syntax "keyword") }}" },
-          "string": { "color": "{{ hex (index .Syntax "string") }}" },
-          "comment": { "color": "{{ hex (index .Syntax "comment") }}" },
-          "variable": { "color": "{{ hex (index .Syntax "variable") }}" },
-          "function": { "color": "{{ hex (index .Syntax "function") }}" },
-          "type": { "color": "{{ hex (index .Syntax "type") }}" },
-          "constant": { "color": "{{ hex (index .Syntax "constant") }}" },
-          "number": { "color": "{{ hex (index .Syntax "number") }}" },
-          "boolean": { "color": "{{ hex (index .Syntax "boolean") }}" },
-          "property": { "color": "{{ hex (index .Syntax "property") }}" },
-          "tag": { "color": "{{ hex (index .Syntax "tag") }}" },
-          "attribute": { "color": "{{ hex (index .Syntax "attribute") }}" }
+          {{- with index .Syntax "keyword" }}
+          "keyword": {
+            "color": "{{ .Color | hex }}"
+            {{- if .Bold }}, "font_weight": 700{{ end }}
+            {{- if .Italic }}, "font_style": "italic"{{ end }}
+          },
+          {{- end }}
+          {{- with index .Syntax "string" }}
+          "string": {
+            "color": "{{ .Color | hex }}"
+            {{- if .Bold }}, "font_weight": 700{{ end }}
+            {{- if .Italic }}, "font_style": "italic"{{ end }}
+          },
+          {{- end }}
+          {{- with index .Syntax "comment" }}
+          "comment": {
+            "color": "{{ .Color | hex }}"
+            {{- if .Bold }}, "font_weight": 700{{ end }}
+            {{- if .Italic }}, "font_style": "italic"{{ end }}
+          },
+          {{- end }}
+          {{- with index .Syntax "variable" }}
+          "variable": {
+            "color": "{{ .Color | hex }}"
+            {{- if .Bold }}, "font_weight": 700{{ end }}
+            {{- if .Italic }}, "font_style": "italic"{{ end }}
+          },
+          {{- end }}
+          {{- with index .Syntax "function" }}
+          "function": {
+            "color": "{{ .Color | hex }}"
+            {{- if .Bold }}, "font_weight": 700{{ end }}
+            {{- if .Italic }}, "font_style": "italic"{{ end }}
+          },
+          {{- end }}
+          {{- with index .Syntax "type" }}
+          "type": {
+            "color": "{{ .Color | hex }}"
+            {{- if .Bold }}, "font_weight": 700{{ end }}
+            {{- if .Italic }}, "font_style": "italic"{{ end }}
+          },
+          {{- end }}
+          {{- with index .Syntax "constant" }}
+          "constant": {
+            "color": "{{ .Color | hex }}"
+            {{- if .Bold }}, "font_weight": 700{{ end }}
+            {{- if .Italic }}, "font_style": "italic"{{ end }}
+          },
+          {{- end }}
+          {{- with index .Syntax "number" }}
+          "number": {
+            "color": "{{ .Color | hex }}"
+            {{- if .Bold }}, "font_weight": 700{{ end }}
+            {{- if .Italic }}, "font_style": "italic"{{ end }}
+          },
+          {{- end }}
+          {{- with index .Syntax "boolean" }}
+          "boolean": {
+            "color": "{{ .Color | hex }}"
+            {{- if .Bold }}, "font_weight": 700{{ end }}
+            {{- if .Italic }}, "font_style": "italic"{{ end }}
+          },
+          {{- end }}
+          {{- with index .Syntax "property" }}
+          "property": {
+            "color": "{{ .Color | hex }}"
+            {{- if .Bold }}, "font_weight": 700{{ end }}
+            {{- if .Italic }}, "font_style": "italic"{{ end }}
+          },
+          {{- end }}
+          {{- with index .Syntax "tag" }}
+          "tag": {
+            "color": "{{ .Color | hex }}"
+            {{- if .Bold }}, "font_weight": 700{{ end }}
+            {{- if .Italic }}, "font_style": "italic"{{ end }}
+          },
+          {{- end }}
+          {{- with index .Syntax "attribute" }}
+          "attribute": {
+            "color": "{{ .Color | hex }}"
+            {{- if .Bold }}, "font_weight": 700{{ end }}
+            {{- if .Italic }}, "font_style": "italic"{{ end }}
+          }
+          {{- end }}
         },
         "link_text.accent": "{{ hex .Theme.url }}"
       }

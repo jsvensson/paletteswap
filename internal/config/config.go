@@ -201,7 +201,7 @@ func parseSyntaxBody(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.Colo
 			if err != nil {
 				return fmt.Errorf("syntax.%s: %w", attr.Name, err)
 			}
-			dest[attr.Name] = c
+			dest[attr.Name] = color.SyntaxStyle{Color: c}
 		}
 	} else {
 		for name, attr := range attrs {
@@ -213,18 +213,88 @@ func parseSyntaxBody(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.Colo
 			if err != nil {
 				return fmt.Errorf("syntax.%s: %w", name, err)
 			}
-			dest[name] = c
+			dest[name] = color.SyntaxStyle{Color: c}
 		}
 	}
 
 	// Recurse into nested blocks
 	for _, block := range body.Blocks {
-		subtree := make(color.ColorTree)
-		dest[block.Type] = subtree
-		if err := parseSyntaxBody(block.Body, ctx, subtree); err != nil {
-			return err
+		if isStyleBlock(block.Body) {
+			style, err := parseStyleBlock(block.Body, ctx)
+			if err != nil {
+				return fmt.Errorf("syntax.%s: %w", block.Type, err)
+			}
+			dest[block.Type] = style
+		} else {
+			subtree := make(color.ColorTree)
+			dest[block.Type] = subtree
+			if err := parseSyntaxBody(block.Body, ctx, subtree); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
+}
+
+// isStyleBlock returns true if the body contains a "color" attribute,
+// indicating it is a style block rather than a nested scope.
+func isStyleBlock(body *hclsyntax.Body) bool {
+	_, hasColor := body.Attributes["color"]
+	return hasColor
+}
+
+// parseStyleBlock parses a style block with a required "color" attribute
+// and optional "bold", "italic", "underline" boolean attributes.
+func parseStyleBlock(body *hclsyntax.Body, ctx *hcl.EvalContext) (color.SyntaxStyle, error) {
+	// Validate that all attributes are known (catches typos)
+	knownAttrs := map[string]bool{"color": true, "bold": true, "italic": true, "underline": true}
+	for name := range body.Attributes {
+		if !knownAttrs[name] {
+			return color.SyntaxStyle{}, fmt.Errorf("unknown attribute %q (valid: color, bold, italic, underline)", name)
+		}
+	}
+
+	colorAttr, ok := body.Attributes["color"]
+	if !ok {
+		return color.SyntaxStyle{}, fmt.Errorf("missing required 'color' attribute")
+	}
+
+	val, diags := colorAttr.Expr.Value(ctx)
+	if diags.HasErrors() {
+		return color.SyntaxStyle{}, fmt.Errorf("evaluating color: %s", diags.Error())
+	}
+
+	c, err := color.ParseHex(val.AsString())
+	if err != nil {
+		return color.SyntaxStyle{}, fmt.Errorf("color: %w", err)
+	}
+
+	style := color.SyntaxStyle{Color: c}
+
+	if attr, ok := body.Attributes["bold"]; ok {
+		val, diags := attr.Expr.Value(ctx)
+		if diags.HasErrors() {
+			return color.SyntaxStyle{}, fmt.Errorf("evaluating bold: %s", diags.Error())
+		}
+		style.Bold = val.True()
+	}
+
+	if attr, ok := body.Attributes["italic"]; ok {
+		val, diags := attr.Expr.Value(ctx)
+		if diags.HasErrors() {
+			return color.SyntaxStyle{}, fmt.Errorf("evaluating italic: %s", diags.Error())
+		}
+		style.Italic = val.True()
+	}
+
+	if attr, ok := body.Attributes["underline"]; ok {
+		val, diags := attr.Expr.Value(ctx)
+		if diags.HasErrors() {
+			return color.SyntaxStyle{}, fmt.Errorf("evaluating underline: %s", diags.Error())
+		}
+		style.Underline = val.True()
+	}
+
+	return style, nil
 }

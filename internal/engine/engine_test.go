@@ -26,9 +26,17 @@ func testTheme() *config.Theme {
 			"cursor":     {R: 235, G: 111, B: 146},
 		},
 		Syntax: color.ColorTree{
-			"keyword": color.Color{R: 49, G: 116, B: 143},
+			"keyword": color.SyntaxStyle{Color: color.Color{R: 49, G: 116, B: 143}},
+			"comment": color.SyntaxStyle{
+				Color:  color.Color{R: 110, G: 106, B: 134},
+				Italic: true,
+			},
 			"markup": color.ColorTree{
-				"heading": color.Color{R: 235, G: 111, B: 146},
+				"heading": color.SyntaxStyle{Color: color.Color{R: 235, G: 111, B: 146}},
+				"bold": color.SyntaxStyle{
+					Color: color.Color{R: 246, G: 193, B: 119},
+					Bold:  true,
+				},
 			},
 		},
 		ANSI: map[string]color.Color{
@@ -155,7 +163,7 @@ func TestRunRGBFunc(t *testing.T) {
 
 func TestRunSyntaxAccess(t *testing.T) {
 	tmplDir := setupTemplateDir(t, map[string]string{
-		"test.txt.tmpl": `{{ $kw := index .Syntax "keyword" }}{{ hex $kw }}`,
+		"test.txt.tmpl": `{{ $kw := index .Syntax "keyword" }}{{ hex $kw.Color }}`,
 	})
 	outDir := filepath.Join(t.TempDir(), "output")
 
@@ -174,6 +182,32 @@ func TestRunSyntaxAccess(t *testing.T) {
 	}
 
 	want := "#31748f"
+	if got := string(content); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestRunSyntaxStyleAccess(t *testing.T) {
+	tmplDir := setupTemplateDir(t, map[string]string{
+		"test.txt.tmpl": `{{ $c := index .Syntax "comment" }}color={{ hex $c.Color }} italic={{ $c.Italic }} bold={{ $c.Bold }}`,
+	})
+	outDir := filepath.Join(t.TempDir(), "output")
+
+	e := &Engine{
+		TemplatesDir: tmplDir,
+		OutputDir:    outDir,
+	}
+
+	if err := e.Run(testTheme()); err != nil {
+		t.Fatalf("Run() error: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(outDir, "test.txt"))
+	if err != nil {
+		t.Fatalf("reading output: %v", err)
+	}
+
+	want := "color=#6e6a86 italic=true bold=false"
 	if got := string(content); got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
