@@ -275,6 +275,35 @@ func parseSyntaxBlock(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.Col
 	return nil
 }
 
+// parseSyntax extracts and parses the syntax block from an hcl.Body.
+// It handles the mixed structure (flat attributes + nested style blocks).
+func parseSyntax(body hcl.Body, ctx *hcl.EvalContext) (color.ColorTree, error) {
+	if body == nil {
+		return make(color.ColorTree), nil
+	}
+
+	// The remain body contains unparsed blocks including syntax.
+	// We need to find the syntax block within it.
+	syntaxBody, ok := body.(*hclsyntax.Body)
+	if !ok {
+		// If not hclsyntax.Body, return empty tree (no syntax block)
+		return make(color.ColorTree), nil
+	}
+
+	// Find the syntax block
+	for _, block := range syntaxBody.Blocks {
+		if block.Type == "syntax" {
+			dest := make(color.ColorTree)
+			if err := parseSyntaxBody(block.Body, ctx, dest); err != nil {
+				return nil, err
+			}
+			return dest, nil
+		}
+	}
+
+	return make(color.ColorTree), nil
+}
+
 func parseSyntaxBody(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.ColorTree) error {
 	// Parse attributes at this level
 	attrs, diags := body.JustAttributes()
