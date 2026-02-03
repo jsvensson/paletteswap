@@ -12,9 +12,6 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// Blank identifier to keep gohcl import until it's used in later refactoring tasks.
-var _ = gohcl.DecodeBody
-
 // Theme is the fully-resolved theme data, ready for template rendering.
 type Theme struct {
 	Meta    Meta
@@ -43,6 +40,79 @@ type ResolvedConfig struct {
 	Theme  map[string]string `hcl:"theme,block"`
 	ANSI   map[string]string `hcl:"ansi,block"`
 	Remain hcl.Body          `hcl:",remain"` // captures syntax for manual parsing
+}
+
+// Loader handles two-pass HCL decoding with palette resolution.
+type Loader struct {
+	body    hcl.Body
+	ctx     *hcl.EvalContext
+	palette map[string]color.Color
+}
+
+// NewLoader parses an HCL file and builds the evaluation context from palette.
+func NewLoader(path string) (*Loader, error) {
+	src, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading theme file: %w", err)
+	}
+
+	file, diags := hclsyntax.ParseConfig(src, path, hcl.Pos{Line: 1, Column: 1})
+	if diags.HasErrors() {
+		return nil, fmt.Errorf("parsing HCL: %s", diags.Error())
+	}
+
+	// First pass: extract palette (literal values, no context needed)
+	var raw RawConfig
+	if diags := gohcl.DecodeBody(file.Body, nil, &raw); diags.HasErrors() {
+		return nil, fmt.Errorf("decoding palette: %s", diags.Error())
+	}
+
+	if len(raw.Palette) == 0 {
+		return nil, fmt.Errorf("no palette block found")
+	}
+
+	palette, err := parseColorMap(raw.Palette)
+	if err != nil {
+		return nil, fmt.Errorf("parsing palette: %w", err)
+	}
+
+	return &Loader{
+		body:    file.Body,
+		ctx:     buildEvalContext(palette),
+		palette: palette,
+	}, nil
+}
+
+// Decode decodes a value using the palette context.
+// Reusable for any blocks that reference palette values.
+func (l *Loader) Decode(target interface{}) error {
+	if diags := gohcl.DecodeBody(l.body, l.ctx, target); diags.HasErrors() {
+		return fmt.Errorf("decoding: %s", diags.Error())
+	}
+	return nil
+}
+
+// Palette returns the parsed palette colors.
+func (l *Loader) Palette() map[string]color.Color {
+	return l.palette
+}
+
+// Context returns the EvalContext for manual parsing.
+func (l *Loader) Context() *hcl.EvalContext {
+	return l.ctx
+}
+
+// parseColorMap converts a map of hex strings to a map of Colors.
+func parseColorMap(m map[string]string) (map[string]color.Color, error) {
+	result := make(map[string]color.Color, len(m))
+	for name, hex := range m {
+		c, err := color.ParseHex(hex)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", name, err)
+		}
+		result[name] = c
+	}
+	return result, nil
 }
 
 // Load parses an HCL theme file and returns a fully-resolved Theme.
