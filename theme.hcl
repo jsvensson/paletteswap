@@ -37,7 +37,6 @@ theme {
 syntax {
   keyword    = palette.pine
   string     = palette.gold
-  comment    = palette.muted
   variable   = palette.text
   function   = palette.foam
   type       = palette.iris
@@ -49,12 +48,29 @@ syntax {
   tag        = palette.foam
   attribute  = palette.iris
 
+  comment {
+    color  = palette.muted
+    italic = true
+  }
+
   markup {
     heading = palette.love
-    bold    = palette.gold
-    italic  = palette.iris
-    link    = palette.foam
     code    = palette.rose
+
+    bold {
+      color = palette.gold
+      bold  = true
+    }
+
+    italic {
+      color  = palette.iris
+      italic = true
+    }
+
+    link {
+      color     = palette.foam
+      underline = true
+    }
   }
 }
 

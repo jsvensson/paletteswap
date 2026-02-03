@@ -11,8 +11,16 @@ type Color struct {
 	R, G, B uint8
 }
 
+// SyntaxStyle represents a syntax scope entry with a color and optional font styles.
+type SyntaxStyle struct {
+	Color     Color
+	Bold      bool
+	Italic    bool
+	Underline bool
+}
+
 // ColorTree represents a nested map of colors, used for syntax scopes.
-// Values are either Color or ColorTree.
+// Values are either SyntaxStyle or ColorTree.
 type ColorTree map[string]interface{}
 
 // ParseHex parses a hex color string like "#eb6f92" into a Color.
