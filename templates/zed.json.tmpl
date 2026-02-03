@@ -1,0 +1,56 @@
+{
+  "$schema": "https://zed.dev/schema/themes/v0.2.0.json",
+  "name": "{{ .Meta.Name }}",
+  "author": "{{ .Meta.Author }}",
+  "themes": [
+    {
+      "name": "{{ .Meta.Name }}",
+      "appearance": "{{ .Meta.Appearance }}",
+      "style": {
+        "background": "{{ hex .Theme.background }}",
+        "editor.background": "{{ hex .Theme.background }}",
+        "editor.foreground": "{{ hex .Theme.foreground }}",
+        "editor.gutter.background": "{{ hex .Theme.background }}",
+        "editor.active_line.background": "{{ hex .Theme.selection }}",
+        "border": "{{ hex .Theme.border }}",
+        "border.variant": "{{ hex .Theme.active_border }}",
+        "tab_bar.background": "{{ hex .Theme.background }}",
+        "tab.inactive_background": "{{ hex .Theme.inactive_tab }}",
+        "tab.active_background": "{{ hex .Theme.active_tab }}",
+        "terminal.background": "{{ hex .Theme.background }}",
+        "terminal.foreground": "{{ hex .Theme.foreground }}",
+        "terminal.ansi.black": "{{ hex .ANSI.black }}",
+        "terminal.ansi.red": "{{ hex .ANSI.red }}",
+        "terminal.ansi.green": "{{ hex .ANSI.green }}",
+        "terminal.ansi.yellow": "{{ hex .ANSI.yellow }}",
+        "terminal.ansi.blue": "{{ hex .ANSI.blue }}",
+        "terminal.ansi.magenta": "{{ hex .ANSI.magenta }}",
+        "terminal.ansi.cyan": "{{ hex .ANSI.cyan }}",
+        "terminal.ansi.white": "{{ hex .ANSI.white }}",
+        "terminal.ansi.bright_black": "{{ hex .ANSI.bright_black }}",
+        "terminal.ansi.bright_red": "{{ hex .ANSI.bright_red }}",
+        "terminal.ansi.bright_green": "{{ hex .ANSI.bright_green }}",
+        "terminal.ansi.bright_yellow": "{{ hex .ANSI.bright_yellow }}",
+        "terminal.ansi.bright_blue": "{{ hex .ANSI.bright_blue }}",
+        "terminal.ansi.bright_magenta": "{{ hex .ANSI.bright_magenta }}",
+        "terminal.ansi.bright_cyan": "{{ hex .ANSI.bright_cyan }}",
+        "terminal.ansi.bright_white": "{{ hex .ANSI.bright_white }}",
+        "syntax": {
+          "keyword": { "color": "{{ hex (index .Syntax "keyword") }}" },
+          "string": { "color": "{{ hex (index .Syntax "string") }}" },
+          "comment": { "color": "{{ hex (index .Syntax "comment") }}" },
+          "variable": { "color": "{{ hex (index .Syntax "variable") }}" },
+          "function": { "color": "{{ hex (index .Syntax "function") }}" },
+          "type": { "color": "{{ hex (index .Syntax "type") }}" },
+          "constant": { "color": "{{ hex (index .Syntax "constant") }}" },
+          "number": { "color": "{{ hex (index .Syntax "number") }}" },
+          "boolean": { "color": "{{ hex (index .Syntax "boolean") }}" },
+          "property": { "color": "{{ hex (index .Syntax "property") }}" },
+          "tag": { "color": "{{ hex (index .Syntax "tag") }}" },
+          "attribute": { "color": "{{ hex (index .Syntax "attribute") }}" }
+        },
+        "link_text.accent": "{{ hex .Theme.url }}"
+      }
+    }
+  ]
+}
