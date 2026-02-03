@@ -6,10 +6,14 @@ import (
 	"sort"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/jsvensson/paletteswap/internal/color"
 	"github.com/zclconf/go-cty/cty"
 )
+
+// Blank identifier to keep gohcl import until it's used in later refactoring tasks.
+var _ = gohcl.DecodeBody
 
 // Theme is the fully-resolved theme data, ready for template rendering.
 type Theme struct {
@@ -22,9 +26,23 @@ type Theme struct {
 
 // Meta holds theme metadata.
 type Meta struct {
-	Name       string
-	Author     string
-	Appearance string
+	Name       string `hcl:"name,attr"`
+	Author     string `hcl:"author,attr"`
+	Appearance string `hcl:"appearance,attr"`
+}
+
+// RawConfig captures the palette block first (no EvalContext needed).
+type RawConfig struct {
+	Palette map[string]string `hcl:"palette,block"`
+	Remain  hcl.Body          `hcl:",remain"`
+}
+
+// ResolvedConfig decodes blocks that reference palette.
+type ResolvedConfig struct {
+	Meta   *Meta             `hcl:"meta,block"`
+	Theme  map[string]string `hcl:"theme,block"`
+	ANSI   map[string]string `hcl:"ansi,block"`
+	Remain hcl.Body          `hcl:",remain"` // captures syntax for manual parsing
 }
 
 // Load parses an HCL theme file and returns a fully-resolved Theme.
