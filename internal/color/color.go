@@ -21,7 +21,13 @@ type Style struct {
 
 // ColorTree represents a nested map of colors, used for syntax scopes.
 // Values are either Style or ColorTree.
-type ColorTree map[string]interface{}
+type ColorTree map[string]any
+
+// IsStyle returns true if the value is a Style (leaf node), false if it's a ColorTree.
+func IsStyle(v any) bool {
+	_, ok := v.(Style)
+	return ok
+}
 
 // ParseHex parses a hex color string like "#eb6f92" into a Color.
 func ParseHex(s string) (Color, error) {

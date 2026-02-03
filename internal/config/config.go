@@ -15,17 +15,18 @@ import (
 // Theme is the fully-resolved theme data, ready for template rendering.
 type Theme struct {
 	Meta    Meta
-	Palette map[string]color.Color
-	Theme   map[string]color.Color
+	Palette color.ColorTree
 	Syntax  color.ColorTree
+	Theme   map[string]color.Color
 	ANSI    map[string]color.Color
 }
 
 // Meta holds theme metadata.
 type Meta struct {
-	Name       string `hcl:"name,attr"`
-	Author     string `hcl:"author,attr"`
-	Appearance string `hcl:"appearance,attr"`
+	Name       string `hcl:"name,optional"`
+	Author     string `hcl:"author,optional"`
+	Appearance string `hcl:"appearance,optional"`
+	URL        string `hcl:"url,optional"`
 }
 
 // PaletteBlock wraps a single palette block for gohcl decoding.
@@ -56,7 +57,7 @@ type ResolvedConfig struct {
 type Loader struct {
 	body    hcl.Body
 	ctx     *hcl.EvalContext
-	palette map[string]color.Color
+	palette color.ColorTree
 }
 
 // NewLoader parses an HCL file and builds the evaluation context from palette.
@@ -81,14 +82,14 @@ func NewLoader(path string) (*Loader, error) {
 		return nil, fmt.Errorf("no palette block found")
 	}
 
-	// Decode palette entries from hcl.Body to map[string]string
-	paletteStrings, err := decodeBodyToMap(raw.Palette.Entries, nil)
-	if err != nil {
-		return nil, fmt.Errorf("parsing palette: %w", err)
+	// Parse nested palette structure (supports direct colors, style blocks, and nested scopes)
+	paletteBody, ok := raw.Palette.Entries.(*hclsyntax.Body)
+	if !ok {
+		return nil, fmt.Errorf("palette block is not an hclsyntax.Body")
 	}
 
-	palette, err := parseColorMap(paletteStrings)
-	if err != nil {
+	palette := make(color.ColorTree)
+	if err := parsePaletteBody(paletteBody, nil, palette); err != nil {
 		return nil, fmt.Errorf("parsing palette: %w", err)
 	}
 
@@ -109,7 +110,7 @@ func (l *Loader) Decode(target interface{}) error {
 }
 
 // Palette returns the parsed palette colors.
-func (l *Loader) Palette() map[string]color.Color {
+func (l *Loader) Palette() color.ColorTree {
 	return l.palette
 }
 
@@ -211,24 +212,90 @@ func Load(path string) (*Theme, error) {
 	}, nil
 }
 
-func buildEvalContext(palette map[string]color.Color) *hcl.EvalContext {
-	vals := make(map[string]cty.Value, len(palette))
+// colorTreeToCty converts a ColorTree to a cty.Value for HCL evaluation context.
+func colorTreeToCty(tree color.ColorTree) cty.Value {
+	vals := make(map[string]cty.Value, len(tree))
 
 	// Sort keys for deterministic output
-	keys := make([]string, 0, len(palette))
-	for k := range palette {
+	keys := make([]string, 0, len(tree))
+	for k := range tree {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
 	for _, k := range keys {
-		vals[k] = cty.StringVal(palette[k].Hex())
+		v := tree[k]
+		if style, ok := v.(color.Style); ok {
+			vals[k] = cty.StringVal(style.Color.Hex())
+		} else if subtree, ok := v.(color.ColorTree); ok {
+			vals[k] = colorTreeToCty(subtree)
+		}
 	}
+
+	return cty.ObjectVal(vals)
+}
+
+func buildEvalContext(palette color.ColorTree) *hcl.EvalContext {
 	return &hcl.EvalContext{
 		Variables: map[string]cty.Value{
-			"palette": cty.ObjectVal(vals),
+			"palette": colorTreeToCty(palette),
 		},
 	}
+}
+
+// parsePaletteBody parses a palette block body with support for:
+// - Direct color attributes: key = "#hex"
+// - Style blocks: key { color = "#hex", bold = true }
+// - Nested blocks: key { sub = ... }
+// Palette is parsed without context (no palette references allowed within palette).
+func parsePaletteBody(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.ColorTree) error {
+	// Parse attributes at this level (direct color assignments)
+	attrs, diags := body.JustAttributes()
+	if diags.HasErrors() {
+		// JustAttributes fails if there are blocks; use manual iteration instead
+		for _, attr := range body.Attributes {
+			val, diags := attr.Expr.Value(ctx)
+			if diags.HasErrors() {
+				return fmt.Errorf("evaluating palette attribute %s: %s", attr.Name, diags.Error())
+			}
+			c, err := color.ParseHex(val.AsString())
+			if err != nil {
+				return fmt.Errorf("palette.%s: %w", attr.Name, err)
+			}
+			dest[attr.Name] = color.Style{Color: c}
+		}
+	} else {
+		for name, attr := range attrs {
+			val, diags := attr.Expr.Value(ctx)
+			if diags.HasErrors() {
+				return fmt.Errorf("evaluating palette.%s: %s", name, diags.Error())
+			}
+			c, err := color.ParseHex(val.AsString())
+			if err != nil {
+				return fmt.Errorf("palette.%s: %w", name, err)
+			}
+			dest[name] = color.Style{Color: c}
+		}
+	}
+
+	// Recurse into nested blocks
+	for _, block := range body.Blocks {
+		if isStyleBlock(block.Body) {
+			style, err := parseStyleBlock(block.Body, ctx)
+			if err != nil {
+				return fmt.Errorf("palette.%s: %w", block.Type, err)
+			}
+			dest[block.Type] = style
+		} else {
+			subtree := make(color.ColorTree)
+			dest[block.Type] = subtree
+			if err := parsePaletteBody(block.Body, ctx, subtree); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // parseSyntax extracts and parses the syntax block from an hcl.Body.

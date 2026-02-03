@@ -17,9 +17,19 @@ func testTheme() *config.Theme {
 			Author:     "Tester",
 			Appearance: "dark",
 		},
-		Palette: map[string]color.Color{
-			"base": {R: 25, G: 23, B: 36},
-			"love": {R: 235, G: 111, B: 146},
+		Palette: color.ColorTree{
+			"base": color.Style{Color: color.Color{R: 25, G: 23, B: 36}},
+			"love": color.Style{Color: color.Color{R: 235, G: 111, B: 146}},
+			"highlight": color.ColorTree{
+				"low":  color.Style{Color: color.Color{R: 33, G: 32, B: 46}},
+				"high": color.Style{Color: color.Color{R: 82, G: 79, B: 103}},
+			},
+			"custom": color.ColorTree{
+				"bold": color.Style{
+					Color: color.Color{R: 255, G: 0, B: 0},
+					Bold:  true,
+				},
+			},
 		},
 		Theme: map[string]color.Color{
 			"background": {R: 25, G: 23, B: 36},
@@ -208,6 +218,58 @@ func TestRunStyleAccess(t *testing.T) {
 	}
 
 	want := "color=#6e6a86 italic=true bold=false"
+	if got := string(content); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestRunPaletteFunc(t *testing.T) {
+	tmplDir := setupTemplateDir(t, map[string]string{
+		"test.txt.tmpl": `{{ palette "base" | hex }} {{ palette "highlight.low" | hex }} {{ palette "highlight.high" | hexBare }}`,
+	})
+	outDir := filepath.Join(t.TempDir(), "output")
+
+	e := &Engine{
+		TemplatesDir: tmplDir,
+		OutputDir:    outDir,
+	}
+
+	if err := e.Run(testTheme()); err != nil {
+		t.Fatalf("Run() error: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(outDir, "test.txt"))
+	if err != nil {
+		t.Fatalf("reading output: %v", err)
+	}
+
+	want := "#191724 #21202e 524f67"
+	if got := string(content); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestRunStyleFunc(t *testing.T) {
+	tmplDir := setupTemplateDir(t, map[string]string{
+		"test.txt.tmpl": `color={{ (style "custom.bold").Color | hex }} bold={{ (style "custom.bold").Bold }}`,
+	})
+	outDir := filepath.Join(t.TempDir(), "output")
+
+	e := &Engine{
+		TemplatesDir: tmplDir,
+		OutputDir:    outDir,
+	}
+
+	if err := e.Run(testTheme()); err != nil {
+		t.Fatalf("Run() error: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(outDir, "test.txt"))
+	if err != nil {
+		t.Fatalf("reading output: %v", err)
+	}
+
+	want := "color=#ff0000 bold=true"
 	if got := string(content); got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}

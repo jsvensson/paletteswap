@@ -22,7 +22,7 @@ meta {
 
 ### Palette Block
 
-Define your color constants as hex values. The names can be arbitrary.
+Define your color constants as hex values. The names can be arbitrary. Supports nested blocks for organizing colors hierarchically.
 
 ```hcl
 palette {
@@ -31,10 +31,29 @@ palette {
   text    = "#e0def4"
   love    = "#eb6f92"
   gold    = "#f6c177"
+
+  highlight {
+    low  = "#21202e"
+    mid  = "#403d52"
+    high = "#524f67"
+  }
 }
 ```
 
-Palette colors can be referenced by other blocks using `palette.<name>` syntax.
+Palette colors can be referenced by other blocks using `palette.<name>` syntax for direct colors, or `palette.<scope>.<name>` for nested colors.
+
+All palette values are accessible in templates using the `palette` function with dot-notation paths:
+
+```text
+{{ palette "highlight.low" | hex }}
+{{ palette "base" | hexBare }}
+```
+
+To access style flags (bold, italic, underline), use the `style` function:
+
+```text
+{{ if (style "custom.bold").Bold }}bold{{ end }}
+```
 
 ### Theme Block
 
@@ -104,7 +123,7 @@ Style properties (`bold`, `italic`, `underline`) are optional and default to fal
 Templates transform your theme data into application-specific config files. They live in the `templates/` directory and use Go's text/template syntax with these data structures:
 
 - `.Meta` - name, author, appearance
-- `.Palette` - raw color definitions
+- `.Palette` - color definitions as a nested tree (values are Style objects)
 - `.Theme` - UI color mappings
 - `.Syntax` - syntax highlighting rules with optional styles
 - `.ANSI` - terminal colors
@@ -112,7 +131,10 @@ Templates transform your theme data into application-specific config files. They
 ### Template Functions
 
 - `hex` - outputs color as quoted hex (e.g., `"#191724"`)
-- `hexBare` - outputs color as bare hex (e.g., `#191724`)
+- `hexBare` - outputs color as bare hex (e.g., `191724`)
+- `rgb` - outputs color as rgb() format (e.g., `rgb(25, 23, 36)`)
+- `palette` - returns a Color from the palette by dot-notation path (e.g., `palette "highlight.low"`)
+- `style` - returns a Style from the palette by dot-notation path (e.g., `style "custom.bold"`)
 
 ### Example Templates
 
