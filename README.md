@@ -65,6 +65,8 @@ ansi {
 
 ### Syntax Block
 
+**Observe:** The syntax names can currently be entirely arbitrary; there is no fixed standard yet. This should be decided upon before PaletteSwap can reliably be adopted. See #5.
+
 Code highlighting with optional styling:
 
 ```hcl
