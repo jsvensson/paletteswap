@@ -26,14 +26,14 @@ func testTheme() *config.Theme {
 			"cursor":     {R: 235, G: 111, B: 146},
 		},
 		Syntax: color.ColorTree{
-			"keyword": color.SyntaxStyle{Color: color.Color{R: 49, G: 116, B: 143}},
-			"comment": color.SyntaxStyle{
+			"keyword": color.Style{Color: color.Color{R: 49, G: 116, B: 143}},
+			"comment": color.Style{
 				Color:  color.Color{R: 110, G: 106, B: 134},
 				Italic: true,
 			},
 			"markup": color.ColorTree{
-				"heading": color.SyntaxStyle{Color: color.Color{R: 235, G: 111, B: 146}},
-				"bold": color.SyntaxStyle{
+				"heading": color.Style{Color: color.Color{R: 235, G: 111, B: 146}},
+				"bold": color.Style{
 					Color: color.Color{R: 246, G: 193, B: 119},
 					Bold:  true,
 				},
@@ -187,7 +187,7 @@ func TestRunSyntaxAccess(t *testing.T) {
 	}
 }
 
-func TestRunSyntaxStyleAccess(t *testing.T) {
+func TestRunStyleAccess(t *testing.T) {
 	tmplDir := setupTemplateDir(t, map[string]string{
 		"test.txt.tmpl": `{{ $c := index .Syntax "comment" }}color={{ hex $c.Color }} italic={{ $c.Italic }} bold={{ $c.Bold }}`,
 	})

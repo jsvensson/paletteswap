@@ -115,10 +115,10 @@ func TestLoadSyntax(t *testing.T) {
 		t.Fatalf("Load() error: %v", err)
 	}
 
-	// Top-level syntax attribute (plain color becomes SyntaxStyle with no style flags)
-	kw, ok := theme.Syntax["keyword"].(color.SyntaxStyle)
+	// Top-level syntax attribute (plain color becomes Style with no style flags)
+	kw, ok := theme.Syntax["keyword"].(color.Style)
 	if !ok {
-		t.Fatal("Syntax[keyword] is not a SyntaxStyle")
+		t.Fatal("Syntax[keyword] is not a Style")
 	}
 	if kw.Color.Hex() != "#31748f" {
 		t.Errorf("Syntax[keyword].Color.Hex() = %q, want %q", kw.Color.Hex(), "#31748f")
@@ -128,9 +128,9 @@ func TestLoadSyntax(t *testing.T) {
 	}
 
 	// Style block (comment with italic)
-	comment, ok := theme.Syntax["comment"].(color.SyntaxStyle)
+	comment, ok := theme.Syntax["comment"].(color.Style)
 	if !ok {
-		t.Fatal("Syntax[comment] is not a SyntaxStyle")
+		t.Fatal("Syntax[comment] is not a Style")
 	}
 	if comment.Color.Hex() != "#1f1d2e" {
 		t.Errorf("Syntax[comment].Color.Hex() = %q, want %q", comment.Color.Hex(), "#1f1d2e")
@@ -147,9 +147,9 @@ func TestLoadSyntax(t *testing.T) {
 	if !ok {
 		t.Fatal("Syntax[markup] is not a ColorTree")
 	}
-	heading, ok := markup["heading"].(color.SyntaxStyle)
+	heading, ok := markup["heading"].(color.Style)
 	if !ok {
-		t.Fatal("Syntax[markup][heading] is not a SyntaxStyle")
+		t.Fatal("Syntax[markup][heading] is not a Style")
 	}
 	if heading.Color.Hex() != "#eb6f92" {
 		t.Errorf("Syntax[markup][heading].Color.Hex() = %q, want %q", heading.Color.Hex(), "#eb6f92")
@@ -198,7 +198,7 @@ palette {
 	}
 }
 
-func TestLoadSyntaxStyleAllBools(t *testing.T) {
+func TestLoadStyleAllBools(t *testing.T) {
 	hcl := `
 palette {
   love = "#eb6f92"
@@ -217,9 +217,9 @@ syntax {
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
-	kw, ok := theme.Syntax["keyword"].(color.SyntaxStyle)
+	kw, ok := theme.Syntax["keyword"].(color.Style)
 	if !ok {
-		t.Fatal("Syntax[keyword] is not a SyntaxStyle")
+		t.Fatal("Syntax[keyword] is not a Style")
 	}
 	if kw.Color.Hex() != "#eb6f92" {
 		t.Errorf("Color.Hex() = %q, want %q", kw.Color.Hex(), "#eb6f92")
@@ -235,7 +235,7 @@ syntax {
 	}
 }
 
-func TestLoadSyntaxStylePartial(t *testing.T) {
+func TestLoadStylePartial(t *testing.T) {
 	hcl := `
 palette {
   foam = "#9ccfd8"
@@ -252,9 +252,9 @@ syntax {
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
-	link, ok := theme.Syntax["link"].(color.SyntaxStyle)
+	link, ok := theme.Syntax["link"].(color.Style)
 	if !ok {
-		t.Fatal("Syntax[link] is not a SyntaxStyle")
+		t.Fatal("Syntax[link] is not a Style")
 	}
 	if !link.Underline {
 		t.Error("Underline should be true")
@@ -292,9 +292,9 @@ syntax {
 	if !ok {
 		t.Fatal("Syntax[markup] is not a ColorTree")
 	}
-	bold, ok := markup["bold"].(color.SyntaxStyle)
+	bold, ok := markup["bold"].(color.Style)
 	if !ok {
-		t.Fatal("markup[bold] is not a SyntaxStyle")
+		t.Fatal("markup[bold] is not a Style")
 	}
 	if !bold.Bold {
 		t.Error("markup.bold.Bold should be true")
@@ -302,16 +302,16 @@ syntax {
 	if bold.Color.Hex() != "#f6c177" {
 		t.Errorf("markup.bold.Color.Hex() = %q, want %q", bold.Color.Hex(), "#f6c177")
 	}
-	italic, ok := markup["italic"].(color.SyntaxStyle)
+	italic, ok := markup["italic"].(color.Style)
 	if !ok {
-		t.Fatal("markup[italic] is not a SyntaxStyle")
+		t.Fatal("markup[italic] is not a Style")
 	}
 	if !italic.Italic {
 		t.Error("markup.italic.Italic should be true")
 	}
 }
 
-func TestLoadSyntaxStyleMissingColor(t *testing.T) {
+func TestLoadStyleMissingColor(t *testing.T) {
 	// A block without "color" is treated as a nested scope, not a style block.
 	// Parsing "bold = true" as a hex color string will panic on AsString().
 	// This verifies the block is not silently accepted.
@@ -334,7 +334,7 @@ syntax {
 	_, _ = Load(path)
 }
 
-func TestLoadSyntaxStyleUnknownAttribute(t *testing.T) {
+func TestLoadStyleUnknownAttribute(t *testing.T) {
 	// Typos and unknown attributes in style blocks should produce an error.
 	hcl := `
 palette {
