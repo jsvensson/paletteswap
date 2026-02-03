@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -35,7 +36,6 @@ func (e *Engine) Run(theme *config.Theme) error {
 	}
 
 	data := buildTemplateData(theme)
-	funcMap := buildFuncMap()
 
 	for _, tmplPath := range matches {
 		baseName := strings.TrimSuffix(filepath.Base(tmplPath), ".tmpl")
@@ -44,7 +44,7 @@ func (e *Engine) Run(theme *config.Theme) error {
 			continue
 		}
 
-		if err := e.renderTemplate(tmplPath, baseName, data, funcMap); err != nil {
+		if err := e.renderTemplate(tmplPath, baseName, data); err != nil {
 			return err
 		}
 	}
@@ -53,19 +53,16 @@ func (e *Engine) Run(theme *config.Theme) error {
 }
 
 func (e *Engine) shouldRender(name string) bool {
+	// If no apps are specified, render all.
 	if len(e.Apps) == 0 {
 		return true
 	}
-	for _, app := range e.Apps {
-		if app == name {
-			return true
-		}
-	}
-	return false
+
+	return slices.Contains(e.Apps, name)
 }
 
-func (e *Engine) renderTemplate(tmplPath, outputName string, data templateData, funcMap template.FuncMap) error {
-	tmpl, err := template.New(filepath.Base(tmplPath)).Funcs(funcMap).ParseFiles(tmplPath)
+func (e *Engine) renderTemplate(tmplPath, outputName string, data templateData) error {
+	tmpl, err := template.New(filepath.Base(tmplPath)).Funcs(data.FuncMap).ParseFiles(tmplPath)
 	if err != nil {
 		return fmt.Errorf("parsing template %s: %w", tmplPath, err)
 	}
@@ -87,10 +84,11 @@ func (e *Engine) renderTemplate(tmplPath, outputName string, data templateData, 
 // templateData is the data passed to templates.
 type templateData struct {
 	Meta    config.Meta
-	Palette map[string]color.Color
+	Palette color.ColorTree
 	Theme   map[string]color.Color
 	Syntax  color.ColorTree
 	ANSI    map[string]color.Color
+	FuncMap template.FuncMap
 }
 
 func buildTemplateData(theme *config.Theme) templateData {
@@ -100,19 +98,53 @@ func buildTemplateData(theme *config.Theme) templateData {
 		Theme:   theme.Theme,
 		Syntax:  theme.Syntax,
 		ANSI:    theme.ANSI,
+		FuncMap: template.FuncMap{
+			"hex": func(c color.Color) string {
+				return c.Hex()
+			},
+			"hexBare": func(c color.Color) string {
+				return c.HexBare()
+			},
+			"rgb": func(c color.Color) string {
+				return c.RGB()
+			},
+			"palette": func(path string) color.Color {
+				return getStyleFromPath(theme.Palette, path).Color
+			},
+			"style": func(path string) color.Style {
+				return getStyleFromPath(theme.Palette, path)
+			},
+		},
 	}
 }
 
-func buildFuncMap() template.FuncMap {
-	return template.FuncMap{
-		"hex": func(c color.Color) string {
-			return c.Hex()
-		},
-		"hexBare": func(c color.Color) string {
-			return c.HexBare()
-		},
-		"rgb": func(c color.Color) string {
-			return c.RGB()
-		},
+// getStyleFromPath traverses a ColorTree using a dot-separated path
+// and returns the Style at that path. Returns empty Style if not found.
+func getStyleFromPath(tree color.ColorTree, path string) color.Style {
+	parts := strings.Split(path, ".")
+	current := tree
+
+	for i, part := range parts {
+		val, ok := current[part]
+		if !ok {
+			return color.Style{}
+		}
+
+		// Last part should be a Style
+		if i == len(parts)-1 {
+			if style, ok := val.(color.Style); ok {
+				return style
+			}
+			return color.Style{}
+		}
+
+		// Intermediate parts should be ColorTrees
+		if subtree, ok := val.(color.ColorTree); ok {
+			current = subtree
+		} else {
+			return color.Style{}
+		}
 	}
+
+	return color.Style{}
 }

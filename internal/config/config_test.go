@@ -14,6 +14,7 @@ meta {
   name       = "Rose Pine"
   author     = "Test Author"
   appearance = "dark"
+  url        = "https://example.com/theme"
 }
 
 palette {
@@ -75,6 +76,9 @@ func TestLoadMeta(t *testing.T) {
 	if theme.Meta.Appearance != "dark" {
 		t.Errorf("Meta.Appearance = %q, want %q", theme.Meta.Appearance, "dark")
 	}
+	if theme.Meta.URL != "https://example.com/theme" {
+		t.Errorf("Meta.URL = %q, want %q", theme.Meta.URL, "https://example.com/theme")
+	}
 }
 
 func TestLoadPalette(t *testing.T) {
@@ -86,9 +90,9 @@ func TestLoadPalette(t *testing.T) {
 	if len(theme.Palette) != 6 {
 		t.Errorf("len(Palette) = %d, want 6", len(theme.Palette))
 	}
-	love := theme.Palette["love"]
-	if love.Hex() != "#eb6f92" {
-		t.Errorf("Palette[love].Hex() = %q, want %q", love.Hex(), "#eb6f92")
+	love := theme.Palette["love"].(color.Style)
+	if love.Color.Hex() != "#eb6f92" {
+		t.Errorf("Palette[love].Color.Hex() = %q, want %q", love.Color.Hex(), "#eb6f92")
 	}
 }
 
@@ -354,5 +358,75 @@ syntax {
 	}
 	if !strings.Contains(err.Error(), "unknown attribute") {
 		t.Errorf("error should mention 'unknown attribute', got: %v", err)
+	}
+}
+
+func TestLoadNestedPalette(t *testing.T) {
+	hcl := `
+palette {
+  base = "#191724"
+  
+  highlight {
+    low  = "#21202e"
+    mid  = "#403d52"
+    high = "#524f67"
+  }
+  
+  custom {
+    bold {
+      color = "#ff0000"
+      bold  = true
+    }
+  }
+}
+
+theme {
+  background = palette.base
+  cursor     = palette.highlight.high
+}
+`
+	path := writeTempHCL(t, hcl)
+	theme, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+
+	// Check direct color
+	base := theme.Palette["base"].(color.Style)
+	if base.Color.Hex() != "#191724" {
+		t.Errorf("Palette[base].Color.Hex() = %q, want %q", base.Color.Hex(), "#191724")
+	}
+
+	// Check nested color
+	highlight, ok := theme.Palette["highlight"].(color.ColorTree)
+	if !ok {
+		t.Fatal("Palette[highlight] is not a ColorTree")
+	}
+	low := highlight["low"].(color.Style)
+	if low.Color.Hex() != "#21202e" {
+		t.Errorf("Palette[highlight][low].Color.Hex() = %q, want %q", low.Color.Hex(), "#21202e")
+	}
+	high := highlight["high"].(color.Style)
+	if high.Color.Hex() != "#524f67" {
+		t.Errorf("Palette[highlight][high].Color.Hex() = %q, want %q", high.Color.Hex(), "#524f67")
+	}
+
+	// Check nested style block
+	custom, ok := theme.Palette["custom"].(color.ColorTree)
+	if !ok {
+		t.Fatal("Palette[custom] is not a ColorTree")
+	}
+	bold := custom["bold"].(color.Style)
+	if bold.Color.Hex() != "#ff0000" {
+		t.Errorf("Palette[custom][bold].Color.Hex() = %q, want %q", bold.Color.Hex(), "#ff0000")
+	}
+	if !bold.Bold {
+		t.Error("Palette[custom][bold].Bold should be true")
+	}
+
+	// Check theme can reference nested palette values
+	cursor := theme.Theme["cursor"]
+	if cursor.Hex() != "#524f67" {
+		t.Errorf("Theme[cursor].Hex() = %q, want %q", cursor.Hex(), "#524f67")
 	}
 }

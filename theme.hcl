@@ -2,32 +2,36 @@ meta {
   name       = "Rosé Pine"
   author     = "Rosé Pine"
   appearance = "dark"
+  url        = "https://rosepinetheme.com"
 }
 
 palette {
-  base           = "#191724"
-  surface        = "#1f1d2e"
-  overlay        = "#26233a"
-  muted          = "#6e6a86"
-  subtle         = "#908caa"
-  text           = "#e0def4"
-  love           = "#eb6f92"
-  gold           = "#f6c177"
-  rose           = "#ebbcba"
-  pine           = "#31748f"
-  foam           = "#9ccfd8"
-  iris           = "#c4a7e7"
-  highlight_low  = "#21202e"
-  highlight_med  = "#403d52"
-  highlight_high = "#524f67"
+  base    = "#191724"
+  surface = "#1f1d2e"
+  overlay = "#26233a"
+  muted   = "#6e6a86"
+  subtle  = "#908caa"
+  text    = "#e0def4"
+  love    = "#eb6f92"
+  gold    = "#f6c177"
+  rose    = "#ebbcba"
+  pine    = "#31748f"
+  foam    = "#9ccfd8"
+  iris    = "#c4a7e7"
+
+  highlight {
+    low  = "#21202e"
+    mid  = "#403d52"
+    high = "#524f67"
+  }
 }
 
 theme {
   background        = palette.base
   foreground        = palette.text
-  cursor            = palette.highlight_high
-  selection         = palette.highlight_med
-  border            = palette.highlight_med
+  cursor            = palette.highlight.high
+  selection         = palette.highlight.mid
+  border            = palette.highlight.mid
   active_border     = palette.muted
   inactive_tab      = palette.surface
   active_tab        = palette.overlay
