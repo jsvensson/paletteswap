@@ -4,7 +4,8 @@ PaletteSwap generates application-specific color themes from a single theme sour
 
 ## HCL Theme Format
 
-**Observe:** This is still in early development. The format is subject to breaking changes.
+> [!WARNING]
+> PaletteSwap is still in early development. The theme and templates formats are subject to breaking changes.
 
 Themes are defined in HCL with a clear, hierarchical structure:
 
@@ -84,7 +85,8 @@ ansi {
 
 ### Syntax Block
 
-**Observe:** The syntax names can currently be entirely arbitrary; there is no fixed standard yet. This should be decided upon before PaletteSwap can reliably be adopted. See [issue #5](https://github.com/jsvensson/paletteswap/issues/5).
+> [!WARNING]
+> The syntax names can currently be entirely arbitrary; there is no fixed standard yet. This should be decided upon before PaletteSwap can reliably be adopted. See [issue #5](https://github.com/jsvensson/paletteswap/issues/5).
 
 Code highlighting with optional styling:
 
