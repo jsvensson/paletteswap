@@ -247,6 +247,14 @@ func isStyleBlock(body *hclsyntax.Body) bool {
 // parseStyleBlock parses a style block with a required "color" attribute
 // and optional "bold", "italic", "underline" boolean attributes.
 func parseStyleBlock(body *hclsyntax.Body, ctx *hcl.EvalContext) (color.SyntaxStyle, error) {
+	// Validate that all attributes are known (catches typos)
+	knownAttrs := map[string]bool{"color": true, "bold": true, "italic": true, "underline": true}
+	for name := range body.Attributes {
+		if !knownAttrs[name] {
+			return color.SyntaxStyle{}, fmt.Errorf("unknown attribute %q (valid: color, bold, italic, underline)", name)
+		}
+	}
+
 	colorAttr, ok := body.Attributes["color"]
 	if !ok {
 		return color.SyntaxStyle{}, fmt.Errorf("missing required 'color' attribute")

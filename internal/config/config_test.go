@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/jsvensson/paletteswap/internal/color"
@@ -331,4 +332,27 @@ syntax {
 		}
 	}()
 	_, _ = Load(path)
+}
+
+func TestLoadSyntaxStyleUnknownAttribute(t *testing.T) {
+	// Typos and unknown attributes in style blocks should produce an error.
+	hcl := `
+palette {
+  love = "#eb6f92"
+}
+syntax {
+  keyword {
+    color = palette.love
+    boldd = true
+  }
+}
+`
+	path := writeTempHCL(t, hcl)
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("expected error for unknown attribute 'boldd'")
+	}
+	if !strings.Contains(err.Error(), "unknown attribute") {
+		t.Errorf("error should mention 'unknown attribute', got: %v", err)
+	}
 }
