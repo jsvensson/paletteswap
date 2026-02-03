@@ -28,18 +28,28 @@ type Meta struct {
 	Appearance string `hcl:"appearance,attr"`
 }
 
+// PaletteBlock wraps a single palette block for gohcl decoding.
+type PaletteBlock struct {
+	Entries hcl.Body `hcl:",remain"`
+}
+
 // RawConfig captures the palette block first (no EvalContext needed).
 type RawConfig struct {
-	Palette map[string]string `hcl:"palette,block"`
-	Remain  hcl.Body          `hcl:",remain"`
+	Palette *PaletteBlock `hcl:"palette,block"`
+	Remain  hcl.Body      `hcl:",remain"`
+}
+
+// ColorBlock wraps a block with arbitrary color attributes for gohcl decoding.
+type ColorBlock struct {
+	Entries hcl.Body `hcl:",remain"`
 }
 
 // ResolvedConfig decodes blocks that reference palette.
 type ResolvedConfig struct {
-	Meta   *Meta             `hcl:"meta,block"`
-	Theme  map[string]string `hcl:"theme,block"`
-	ANSI   map[string]string `hcl:"ansi,block"`
-	Remain hcl.Body          `hcl:",remain"` // captures syntax for manual parsing
+	Meta   *Meta       `hcl:"meta,block"`
+	Theme  *ColorBlock `hcl:"theme,block"`
+	ANSI   *ColorBlock `hcl:"ansi,block"`
+	Remain hcl.Body    `hcl:",remain"` // captures syntax for manual parsing
 }
 
 // Loader handles two-pass HCL decoding with palette resolution.
@@ -67,11 +77,17 @@ func NewLoader(path string) (*Loader, error) {
 		return nil, fmt.Errorf("decoding palette: %s", diags.Error())
 	}
 
-	if len(raw.Palette) == 0 {
+	if raw.Palette == nil {
 		return nil, fmt.Errorf("no palette block found")
 	}
 
-	palette, err := parseColorMap(raw.Palette)
+	// Decode palette entries from hcl.Body to map[string]string
+	paletteStrings, err := decodeBodyToMap(raw.Palette.Entries, nil)
+	if err != nil {
+		return nil, fmt.Errorf("parsing palette: %w", err)
+	}
+
+	palette, err := parseColorMap(paletteStrings)
 	if err != nil {
 		return nil, fmt.Errorf("parsing palette: %w", err)
 	}
@@ -115,52 +131,84 @@ func parseColorMap(m map[string]string) (map[string]color.Color, error) {
 	return result, nil
 }
 
+// decodeBodyToMap decodes an hcl.Body with arbitrary string attributes into a map.
+func decodeBodyToMap(body hcl.Body, ctx *hcl.EvalContext) (map[string]string, error) {
+	if body == nil {
+		return make(map[string]string), nil
+	}
+
+	attrs, diags := body.JustAttributes()
+	if diags.HasErrors() {
+		return nil, fmt.Errorf("getting attributes: %s", diags.Error())
+	}
+
+	result := make(map[string]string, len(attrs))
+	for name, attr := range attrs {
+		val, diags := attr.Expr.Value(ctx)
+		if diags.HasErrors() {
+			return nil, fmt.Errorf("evaluating %s: %s", name, diags.Error())
+		}
+		result[name] = val.AsString()
+	}
+	return result, nil
+}
+
 // Load parses an HCL theme file and returns a fully-resolved Theme.
 func Load(path string) (*Theme, error) {
-	src, err := os.ReadFile(path)
+	loader, err := NewLoader(path)
 	if err != nil {
-		return nil, fmt.Errorf("reading theme file: %w", err)
-	}
-
-	file, diags := hclsyntax.ParseConfig(src, path, hcl.Pos{Line: 1, Column: 1})
-	if diags.HasErrors() {
-		return nil, fmt.Errorf("parsing HCL: %s", diags.Error())
-	}
-
-	body := file.Body.(*hclsyntax.Body)
-
-	theme := &Theme{
-		Palette: make(map[string]color.Color),
-		Theme:   make(map[string]color.Color),
-		Syntax:  make(color.ColorTree),
-		ANSI:    make(map[string]color.Color),
-	}
-
-	// Parse meta block
-	if err := parseMeta(body, theme); err != nil {
 		return nil, err
 	}
 
-	// Parse palette block — must come first since other blocks reference it
-	if err := parsePalette(body, theme); err != nil {
+	// Second pass: decode blocks that reference palette
+	var resolved ResolvedConfig
+	if err := loader.Decode(&resolved); err != nil {
 		return nil, err
 	}
 
-	// Build EvalContext with palette colors for resolving references
-	ctx := buildEvalContext(theme.Palette)
+	// Convert ColorBlock entries to color maps
+	var themeStrings map[string]string
+	if resolved.Theme != nil {
+		themeStrings, err = decodeBodyToMap(resolved.Theme.Entries, loader.Context())
+		if err != nil {
+			return nil, fmt.Errorf("parsing theme: %w", err)
+		}
+	}
+	themeColors, err := parseColorMap(themeStrings)
+	if err != nil {
+		return nil, fmt.Errorf("parsing theme: %w", err)
+	}
 
-	// Parse theme, syntax, and ansi blocks using the palette context
-	if err := parseColorBlock(body, "theme", ctx, theme.Theme); err != nil {
-		return nil, err
+	var ansiStrings map[string]string
+	if resolved.ANSI != nil {
+		ansiStrings, err = decodeBodyToMap(resolved.ANSI.Entries, loader.Context())
+		if err != nil {
+			return nil, fmt.Errorf("parsing ansi: %w", err)
+		}
 	}
-	if err := parseSyntaxBlock(body, ctx, theme.Syntax); err != nil {
-		return nil, err
-	}
-	if err := parseColorBlock(body, "ansi", ctx, theme.ANSI); err != nil {
-		return nil, err
+	ansiColors, err := parseColorMap(ansiStrings)
+	if err != nil {
+		return nil, fmt.Errorf("parsing ansi: %w", err)
 	}
 
-	return theme, nil
+	// Parse syntax manually (nested blocks with style properties)
+	syntax, err := parseSyntax(resolved.Remain, loader.Context())
+	if err != nil {
+		return nil, fmt.Errorf("parsing syntax: %w", err)
+	}
+
+	meta := Meta{}
+	if resolved.Meta != nil {
+		meta = *resolved.Meta
+	}
+
+	return &Theme{
+		Meta:    meta,
+		Palette: loader.Palette(),
+		Theme:   themeColors,
+		Syntax:  syntax,
+		ANSI:    ansiColors,
+	}, nil
 }
 
 func parseMeta(body *hclsyntax.Body, theme *Theme) error {
