@@ -451,3 +451,24 @@ theme {
 		t.Errorf("Theme[background].Hex() = %q, want %q", bg.Hex(), "#7f7f7f")
 	}
 }
+
+func TestBrightenWithLiteralHex(t *testing.T) {
+	hcl := `
+palette {
+  base = "#000000"
+}
+
+theme {
+  background = brighten("#000000", 0.5)
+}
+`
+	path := writeTempHCL(t, hcl)
+	theme, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	bg := theme.Theme["background"]
+	if bg.Hex() != "#7f7f7f" {
+		t.Errorf("Theme[background].Hex() = %q, want %q", bg.Hex(), "#7f7f7f")
+	}
+}
