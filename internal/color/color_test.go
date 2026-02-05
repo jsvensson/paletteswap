@@ -143,3 +143,59 @@ func TestColor_RGBA(t *testing.T) {
 		})
 	}
 }
+
+func TestColor_HexAlpha(t *testing.T) {
+	tests := []struct {
+		name     string
+		color    Color
+		expected string
+	}{
+		{
+			name:     "red with full opacity",
+			color:    Color{255, 0, 0},
+			expected: "#ff0000ff",
+		},
+		{
+			name:     "dark color",
+			color:    Color{25, 23, 36},
+			expected: "#191724ff",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.color.HexAlpha()
+			if got != tt.expected {
+				t.Errorf("HexAlpha() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestColor_HexBareAlpha(t *testing.T) {
+	tests := []struct {
+		name     string
+		color    Color
+		expected string
+	}{
+		{
+			name:     "red with full opacity",
+			color:    Color{255, 0, 0},
+			expected: "ff0000ff",
+		},
+		{
+			name:     "dark color",
+			color:    Color{25, 23, 36},
+			expected: "191724ff",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.color.HexBareAlpha()
+			if got != tt.expected {
+				t.Errorf("HexBareAlpha() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}

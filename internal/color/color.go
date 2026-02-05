@@ -53,6 +53,16 @@ func (c Color) HexBare() string {
 	return fmt.Sprintf("%02x%02x%02x", c.R, c.G, c.B)
 }
 
+// HexAlpha returns the color in hex format with alpha channel (#rrggbbaa)
+func (c Color) HexAlpha() string {
+	return c.Hex() + "ff"
+}
+
+// HexBareAlpha returns the color in hex format without # prefix and with alpha channel (rrggbbaa)
+func (c Color) HexBareAlpha() string {
+	return c.HexBare() + "ff"
+}
+
 // RGB returns the color as an rgb() string, e.g. "rgb(235, 111, 146)".
 func (c Color) RGB() string {
 	return fmt.Sprintf("rgb(%d, %d, %d)", c.R, c.G, c.B)
