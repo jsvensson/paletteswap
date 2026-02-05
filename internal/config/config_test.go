@@ -493,3 +493,24 @@ theme {
 		t.Errorf("Theme[background].Hex() = %q, want %q", bg.Hex(), "#7f7f7f")
 	}
 }
+
+func TestBrightenInANSI(t *testing.T) {
+	hcl := `
+palette {
+  base = "#000000"
+}
+
+ansi {
+  black = brighten(palette.base, 0.5)
+}
+`
+	path := writeTempHCL(t, hcl)
+	theme, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	black := theme.ANSI["black"]
+	if black.Hex() != "#7f7f7f" {
+		t.Errorf("ANSI[black].Hex() = %q, want %q", black.Hex(), "#7f7f7f")
+	}
+}
