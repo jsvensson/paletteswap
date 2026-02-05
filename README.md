@@ -6,6 +6,12 @@ PaletteSwap generates application-specific color themes from a single theme sour
 
 > [!WARNING]
 > PaletteSwap is still in early development. The theme and templates formats are subject to breaking changes.
+>
+> **BREAKING CHANGES (2026-02-05):**
+> - Template functions redesigned: `hexBare` → `bhex`, removed `palette` function
+> - Universal path notation: use `hex "block.path"` instead of `palette "path" | hex`
+> - Style function requires block prefix: `style "palette.custom"` instead of `style "custom"`
+> - ANSI block now required with all 16 colors
 
 Themes are defined in HCL with a clear, hierarchical structure:
 
@@ -43,17 +49,17 @@ palette {
 
 Palette colors can be referenced by other blocks using `palette.<name>` syntax for direct colors, or `palette.<scope>.<name>` for nested colors.
 
-All palette values are accessible in templates using the `palette` function with dot-notation paths:
+All palette values are accessible in templates using universal dot-notation paths:
 
 ```text
-{{ palette "highlight.low" | hex }}
-{{ palette "base" | hexBare }}
+{{ hex "palette.highlight.low" }}
+{{ bhex "palette.base" }}
 ```
 
-To access style flags (bold, italic, underline), use the `style` function:
+To access style flags (bold, italic, underline), use the `style` function with block prefix:
 
 ```text
-{{ if (style "custom.bold").Bold }}bold{{ end }}
+{{ if (style "palette.custom.bold").Bold }}bold{{ end }}
 ```
 
 ### HCL Functions
@@ -158,20 +164,27 @@ Templates transform your theme data into application-specific config files. They
 
 ### Template Functions
 
-- `hex` - outputs color as quoted hex (e.g., `"#191724"`)
-- `hexBare` - outputs color as bare hex (e.g., `191724`)
-- `rgb` - outputs color as rgb() format (e.g., `rgb(25, 23, 36)`)
-- `palette` - returns a Color from the palette by dot-notation path (e.g., `palette "highlight.low"`)
-- `style` - returns a Style from the palette by dot-notation path (e.g., `style "custom.bold"`)
+**Color formatting functions** accept universal dot-notation paths like `"palette.base"`, `"theme.background"`, `"ansi.black"`, or `"syntax.keyword"`:
+
+- `hex "path"` - hex with hash prefix (e.g., `#191724`)
+- `bhex "path"` - bare hex without hash (e.g., `191724`)
+- `hexa "path"` - hex with alpha channel (e.g., `#191724ff`)
+- `bhexa "path"` - bare hex with alpha (e.g., `191724ff`)
+- `rgb "path"` - RGB function format (e.g., `rgb(25, 23, 36)`)
+- `rgba "path"` - RGBA with alpha (e.g., `rgba(25, 23, 36, 1.0)`)
+
+**Style access:**
+
+- `style "path"` - returns a Style object with `.Bold`, `.Italic`, `.Underline` flags (supports `palette.*` and `syntax.*` blocks)
 
 ### Example Templates
 
 **Ghostty terminal** (`ghostty.tmpl`):
 
 ```
-background = {{ hexBare .Theme.background }}
-foreground = {{ hexBare .Theme.foreground }}
-cursor-color = {{ hexBare .Theme.cursor }}
+background = {{ bhex "theme.background" }}
+foreground = {{ bhex "theme.foreground" }}
+cursor-color = {{ bhex "theme.cursor" }}
 ```
 
 **Zed editor** (`zed.json.tmpl`):
@@ -180,8 +193,8 @@ cursor-color = {{ hexBare .Theme.cursor }}
 {
   "name": "{{ .Meta.Name }}",
   "style": {
-    "background": "{{ hex .Theme.background }}",
-    "editor.background": "{{ hex .Theme.background }}"
+    "background": "{{ hex "theme.background" }}",
+    "editor.background": "{{ hex "theme.background" }}"
   }
 }
 ```
