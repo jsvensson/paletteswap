@@ -91,6 +91,89 @@ type templateData struct {
 	FuncMap template.FuncMap
 }
 
+// resolveColorPath resolves a universal dot-notation path to a Color.
+// Supports paths like "palette.base", "theme.background", "ansi.black", "syntax.keyword".
+func resolveColorPath(path string, data templateData) (color.Color, error) {
+	parts := strings.Split(path, ".")
+	if len(parts) < 2 {
+		return color.Color{}, fmt.Errorf("invalid path %q: must be block.name format", path)
+	}
+
+	block := parts[0]
+	rest := parts[1:]
+
+	switch block {
+	case "palette":
+		style := getStyleFromTree(data.Palette, rest)
+		if style.Color == (color.Color{}) {
+			return color.Color{}, fmt.Errorf("palette path not found: %s", path)
+		}
+		return style.Color, nil
+
+	case "theme":
+		if len(rest) != 1 {
+			return color.Color{}, fmt.Errorf("theme paths must be single-level: %s", path)
+		}
+		c, ok := data.Theme[rest[0]]
+		if !ok {
+			return color.Color{}, fmt.Errorf("theme color not found: %s", rest[0])
+		}
+		return c, nil
+
+	case "ansi":
+		if len(rest) != 1 {
+			return color.Color{}, fmt.Errorf("ansi paths must be single-level: %s", path)
+		}
+		c, ok := data.ANSI[rest[0]]
+		if !ok {
+			return color.Color{}, fmt.Errorf("ansi color not found: %s", rest[0])
+		}
+		return c, nil
+
+	case "syntax":
+		style := getStyleFromTree(data.Syntax, rest)
+		if style.Color == (color.Color{}) {
+			return color.Color{}, fmt.Errorf("syntax path not found: %s", path)
+		}
+		return style.Color, nil
+
+	default:
+		return color.Color{}, fmt.Errorf("unknown block %q (valid: palette, theme, ansi, syntax)", block)
+	}
+}
+
+// getStyleFromTree traverses a ColorTree using path segments and returns the Style.
+func getStyleFromTree(tree color.ColorTree, path []string) color.Style {
+	if len(path) == 0 {
+		return color.Style{}
+	}
+
+	current := tree
+	for i, part := range path {
+		val, ok := current[part]
+		if !ok {
+			return color.Style{}
+		}
+
+		// Last part should be a Style
+		if i == len(path)-1 {
+			if style, ok := val.(color.Style); ok {
+				return style
+			}
+			return color.Style{}
+		}
+
+		// Intermediate parts should be ColorTrees
+		if subtree, ok := val.(color.ColorTree); ok {
+			current = subtree
+		} else {
+			return color.Style{}
+		}
+	}
+
+	return color.Style{}
+}
+
 func buildTemplateData(theme *config.Theme) templateData {
 	return templateData{
 		Meta:    theme.Meta,
