@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -12,6 +13,14 @@ import (
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
 )
+
+// requiredANSIColors defines the 16 standard terminal colors that must be present.
+var requiredANSIColors = []string{
+	"black", "red", "green", "yellow",
+	"blue", "magenta", "cyan", "white",
+	"bright_black", "bright_red", "bright_green", "bright_yellow",
+	"bright_blue", "bright_magenta", "bright_cyan", "bright_white",
+}
 
 // Theme is the fully-resolved theme data, ready for template rendering.
 type Theme struct {
@@ -155,6 +164,28 @@ func decodeBodyToMap(body hcl.Body, ctx *hcl.EvalContext) (map[string]string, er
 	return result, nil
 }
 
+// validateANSI checks that all 16 required ANSI colors are present.
+func validateANSI(ansi map[string]color.Color) error {
+	if len(ansi) == 0 {
+		return fmt.Errorf("ansi block incomplete: no colors defined")
+	}
+
+	var missing []string
+	for _, colorName := range requiredANSIColors {
+		if _, ok := ansi[colorName]; !ok {
+			missing = append(missing, colorName)
+		}
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("ansi block incomplete\nMissing colors: %s\nRequired colors: %s",
+			strings.Join(missing, ", "),
+			strings.Join(requiredANSIColors, ", "))
+	}
+
+	return nil
+}
+
 // Load parses an HCL theme file and returns a fully-resolved Theme.
 func Load(path string) (*Theme, error) {
 	loader, err := NewLoader(path)
@@ -191,6 +222,10 @@ func Load(path string) (*Theme, error) {
 	ansiColors, err := parseColorMap(ansiStrings)
 	if err != nil {
 		return nil, fmt.Errorf("parsing ansi: %w", err)
+	}
+
+	if err := validateANSI(ansiColors); err != nil {
+		return nil, err
 	}
 
 	// Parse syntax manually (nested blocks with style properties)
