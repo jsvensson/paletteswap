@@ -472,3 +472,24 @@ theme {
 		t.Errorf("Theme[background].Hex() = %q, want %q", bg.Hex(), "#7f7f7f")
 	}
 }
+
+func TestBrightenNegative(t *testing.T) {
+	hcl := `
+palette {
+  white = "#ffffff"
+}
+
+theme {
+  background = brighten(palette.white, -0.5)
+}
+`
+	path := writeTempHCL(t, hcl)
+	theme, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	bg := theme.Theme["background"]
+	if bg.Hex() != "#7f7f7f" {
+		t.Errorf("Theme[background].Hex() = %q, want %q", bg.Hex(), "#7f7f7f")
+	}
+}
