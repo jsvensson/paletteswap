@@ -91,104 +91,72 @@ type templateData struct {
 	FuncMap template.FuncMap
 }
 
-func buildTemplateData(theme *config.Theme) templateData {
-	return templateData{
-		Meta:    theme.Meta,
-		Palette: theme.Palette,
-		Theme:   theme.Theme,
-		Syntax:  theme.Syntax,
-		ANSI:    theme.ANSI,
-		FuncMap: template.FuncMap{
-			"hex": func(v any) (string, error) {
-				switch val := v.(type) {
-				case string:
-					style, err := getStyleFromPathWithError(theme.Palette, val)
-					if err != nil {
-						return "", err
-					}
-					return style.Color.Hex(), nil
-				case color.Color:
-					return val.Hex(), nil
-				default:
-					return "", fmt.Errorf("hex: expected string path or Color, got %T", v)
-				}
-			},
-			"hexBare": func(c color.Color) string {
-				return c.HexBare()
-			},
-			"bhex": func(v any) (string, error) {
-				switch val := v.(type) {
-				case string:
-					style, err := getStyleFromPathWithError(theme.Palette, val)
-					if err != nil {
-						return "", err
-					}
-					return style.Color.HexBare(), nil
-				case color.Color:
-					return val.HexBare(), nil
-				default:
-					return "", fmt.Errorf("bhex: expected string path or Color, got %T", v)
-				}
-			},
-			"hexa": func(path string) (string, error) {
-				style, err := getStyleFromPathWithError(theme.Palette, path)
-				if err != nil {
-					return "", err
-				}
-				return style.Color.HexAlpha(), nil
-			},
-			"bhexa": func(path string) (string, error) {
-				style, err := getStyleFromPathWithError(theme.Palette, path)
-				if err != nil {
-					return "", err
-				}
-				return style.Color.HexBareAlpha(), nil
-			},
-			"rgb": func(v any) (string, error) {
-				switch val := v.(type) {
-				case string:
-					style, err := getStyleFromPathWithError(theme.Palette, val)
-					if err != nil {
-						return "", err
-					}
-					return style.Color.RGB(), nil
-				case color.Color:
-					return val.RGB(), nil
-				default:
-					return "", fmt.Errorf("rgb: expected string path or Color, got %T", v)
-				}
-			},
-			"rgba": func(path string) (string, error) {
-				style, err := getStyleFromPathWithError(theme.Palette, path)
-				if err != nil {
-					return "", err
-				}
-				return style.Color.RGBA(), nil
-			},
-			"palette": func(path string) color.Color {
-				return getStyleFromPath(theme.Palette, path).Color
-			},
-			"style": func(path string) color.Style {
-				return getStyleFromPath(theme.Palette, path)
-			},
-		},
+// resolveColorPath resolves a universal dot-notation path to a Color.
+// Supports paths like "palette.base", "theme.background", "ansi.black", "syntax.keyword".
+func resolveColorPath(path string, data templateData) (color.Color, error) {
+	parts := strings.Split(path, ".")
+	if len(parts) < 2 {
+		return color.Color{}, fmt.Errorf("invalid path %q: must be block.name format", path)
+	}
+
+	block := parts[0]
+	rest := parts[1:]
+
+	switch block {
+	case "palette":
+		style := getStyleFromTree(data.Palette, rest)
+		if style.Color == (color.Color{}) {
+			return color.Color{}, fmt.Errorf("palette path not found: %s", path)
+		}
+		return style.Color, nil
+
+	case "theme":
+		if len(rest) != 1 {
+			return color.Color{}, fmt.Errorf("theme paths must be single-level: %s", path)
+		}
+		c, ok := data.Theme[rest[0]]
+		if !ok {
+			return color.Color{}, fmt.Errorf("theme color not found: %s", rest[0])
+		}
+		return c, nil
+
+	case "ansi":
+		if len(rest) != 1 {
+			return color.Color{}, fmt.Errorf("ansi paths must be single-level: %s", path)
+		}
+		c, ok := data.ANSI[rest[0]]
+		if !ok {
+			return color.Color{}, fmt.Errorf("ansi color not found: %s", rest[0])
+		}
+		return c, nil
+
+	case "syntax":
+		style := getStyleFromTree(data.Syntax, rest)
+		if style.Color == (color.Color{}) {
+			return color.Color{}, fmt.Errorf("syntax path not found: %s", path)
+		}
+		return style.Color, nil
+
+	default:
+		return color.Color{}, fmt.Errorf("unknown block %q (valid: palette, theme, ansi, syntax)", block)
 	}
 }
 
-// getStyleFromPath traverses a ColorTree using a dot-separated path
-// and returns the Style at that path. Returns empty Style if not found.
-func getStyleFromPath(tree color.ColorTree, path string) color.Style {
-	parts := strings.Split(path, ".")
-	current := tree
+// getStyleFromTree traverses a ColorTree using path segments and returns the Style.
+func getStyleFromTree(tree color.ColorTree, path []string) color.Style {
+	if len(path) == 0 {
+		return color.Style{}
+	}
 
-	for i, part := range parts {
+	current := tree
+	for i, part := range path {
 		val, ok := current[part]
 		if !ok {
 			return color.Style{}
 		}
 
 		// Last part should be a Style
-		if i == len(parts)-1 {
+		if i == len(path)-1 {
 			if style, ok := val.(color.Style); ok {
 				return style
 			}
@@ -206,32 +174,121 @@ func getStyleFromPath(tree color.ColorTree, path string) color.Style {
 	return color.Style{}
 }
 
-// getStyleFromPathWithError traverses a ColorTree using dot-separated path and returns error if not found
-func getStyleFromPathWithError(tree color.ColorTree, path string) (color.Style, error) {
-	parts := strings.Split(path, ".")
-	current := tree
-
-	for i, part := range parts {
-		value, exists := current[part]
-		if !exists {
-			return color.Style{}, fmt.Errorf("palette path not found: %s", path)
-		}
-
-		// If this is the last part, we expect a Style
-		if i == len(parts)-1 {
-			if style, ok := value.(color.Style); ok {
-				return style, nil
-			}
-			return color.Style{}, fmt.Errorf("palette path %s is not a color", path)
-		}
-
-		// Otherwise, we expect a ColorTree to continue traversing
-		if subtree, ok := value.(color.ColorTree); ok {
-			current = subtree
-		} else {
-			return color.Style{}, fmt.Errorf("palette path %s: expected subtree at %s", path, part)
-		}
+func buildTemplateData(theme *config.Theme) templateData {
+	data := templateData{
+		Meta:    theme.Meta,
+		Palette: theme.Palette,
+		Theme:   theme.Theme,
+		Syntax:  theme.Syntax,
+		ANSI:    theme.ANSI,
 	}
 
-	return color.Style{}, fmt.Errorf("palette path not found: %s", path)
+	// Universal path-based functions
+	data.FuncMap = template.FuncMap{
+		"hex": func(arg any) (string, error) {
+			switch v := arg.(type) {
+			case string:
+				c, err := resolveColorPath(v, data)
+				if err != nil {
+					return "", err
+				}
+				return c.Hex(), nil
+			case color.Color:
+				return v.Hex(), nil
+			default:
+				return "", fmt.Errorf("hex: unsupported type %T", arg)
+			}
+		},
+		"bhex": func(arg any) (string, error) {
+			switch v := arg.(type) {
+			case string:
+				c, err := resolveColorPath(v, data)
+				if err != nil {
+					return "", err
+				}
+				return c.HexBare(), nil
+			case color.Color:
+				return v.HexBare(), nil
+			default:
+				return "", fmt.Errorf("bhex: unsupported type %T", arg)
+			}
+		},
+		"hexa": func(arg any) (string, error) {
+			switch v := arg.(type) {
+			case string:
+				c, err := resolveColorPath(v, data)
+				if err != nil {
+					return "", err
+				}
+				return c.HexAlpha(), nil
+			case color.Color:
+				return v.HexAlpha(), nil
+			default:
+				return "", fmt.Errorf("hexa: unsupported type %T", arg)
+			}
+		},
+		"bhexa": func(arg any) (string, error) {
+			switch v := arg.(type) {
+			case string:
+				c, err := resolveColorPath(v, data)
+				if err != nil {
+					return "", err
+				}
+				return c.HexBareAlpha(), nil
+			case color.Color:
+				return v.HexBareAlpha(), nil
+			default:
+				return "", fmt.Errorf("bhexa: unsupported type %T", arg)
+			}
+		},
+		"rgb": func(arg any) (string, error) {
+			switch v := arg.(type) {
+			case string:
+				c, err := resolveColorPath(v, data)
+				if err != nil {
+					return "", err
+				}
+				return c.RGB(), nil
+			case color.Color:
+				return v.RGB(), nil
+			default:
+				return "", fmt.Errorf("rgb: unsupported type %T", arg)
+			}
+		},
+		"rgba": func(arg any) (string, error) {
+			switch v := arg.(type) {
+			case string:
+				c, err := resolveColorPath(v, data)
+				if err != nil {
+					return "", err
+				}
+				return c.RGBA(), nil
+			case color.Color:
+				return v.RGBA(), nil
+			default:
+				return "", fmt.Errorf("rgba: unsupported type %T", arg)
+			}
+		},
+		"style": func(path string) (color.Style, error) {
+			parts := strings.Split(path, ".")
+			if len(parts) < 2 {
+				return color.Style{}, fmt.Errorf("invalid path %q", path)
+			}
+
+			block := parts[0]
+			rest := parts[1:]
+
+			switch block {
+			case "palette":
+				return getStyleFromTree(data.Palette, rest), nil
+			case "syntax":
+				return getStyleFromTree(data.Syntax, rest), nil
+			default:
+				return color.Style{}, fmt.Errorf("style only supports palette/syntax blocks, got %q", block)
+			}
+		},
+	}
+
+	return data
 }
+

@@ -9,6 +9,27 @@ import (
 	"github.com/jsvensson/paletteswap/internal/color"
 )
 
+const completeANSI = `
+ansi {
+  black   = "#000000"
+  red     = "#ff0000"
+  green   = "#00ff00"
+  yellow  = "#ffff00"
+  blue    = "#0000ff"
+  magenta = "#ff00ff"
+  cyan    = "#00ffff"
+  white   = "#ffffff"
+  bright_black   = "#808080"
+  bright_red     = "#ff8080"
+  bright_green   = "#80ff80"
+  bright_yellow  = "#ffff80"
+  bright_blue    = "#8080ff"
+  bright_magenta = "#ff80ff"
+  bright_cyan    = "#80ffff"
+  bright_white   = "#ffffff"
+}
+`
+
 const sampleHCL = `
 meta {
   name       = "Rose Pine"
@@ -46,8 +67,22 @@ syntax {
 }
 
 ansi {
-  black = palette.base
-  red   = palette.love
+  black   = palette.base
+  red     = palette.love
+  green   = "#00ff00"
+  yellow  = "#ffff00"
+  blue    = "#0000ff"
+  magenta = "#ff00ff"
+  cyan    = "#00ffff"
+  white   = "#ffffff"
+  bright_black   = "#808080"
+  bright_red     = "#ff8080"
+  bright_green   = "#80ff80"
+  bright_yellow  = "#ffff80"
+  bright_blue    = "#8080ff"
+  bright_magenta = "#ff80ff"
+  bright_cyan    = "#80ffff"
+  bright_white   = "#ffffff"
 }
 `
 
@@ -215,7 +250,7 @@ syntax {
     underline = true
   }
 }
-`
+` + completeANSI
 	path := writeTempHCL(t, hcl)
 	theme, err := Load(path)
 	if err != nil {
@@ -250,7 +285,7 @@ syntax {
     underline = true
   }
 }
-`
+` + completeANSI
 	path := writeTempHCL(t, hcl)
 	theme, err := Load(path)
 	if err != nil {
@@ -286,7 +321,7 @@ syntax {
     }
   }
 }
-`
+` + completeANSI
 	path := writeTempHCL(t, hcl)
 	theme, err := Load(path)
 	if err != nil {
@@ -328,7 +363,7 @@ syntax {
     bold = true
   }
 }
-`
+` + completeANSI
 	path := writeTempHCL(t, hcl)
 	defer func() {
 		if r := recover(); r == nil {
@@ -350,7 +385,7 @@ syntax {
     boldd = true
   }
 }
-`
+` + completeANSI
 	path := writeTempHCL(t, hcl)
 	_, err := Load(path)
 	if err == nil {
@@ -384,7 +419,7 @@ theme {
   background = palette.base
   cursor     = palette.highlight.high
 }
-`
+` + completeANSI
 	path := writeTempHCL(t, hcl)
 	theme, err := Load(path)
 	if err != nil {
@@ -440,7 +475,7 @@ palette {
 theme {
   background = brighten(palette.base, 0.5)
 }
-`
+` + completeANSI
 	path := writeTempHCL(t, hcl)
 	theme, err := Load(path)
 	if err != nil {
@@ -461,7 +496,7 @@ palette {
 theme {
   background = brighten("#000000", 0.5)
 }
-`
+` + completeANSI
 	path := writeTempHCL(t, hcl)
 	theme, err := Load(path)
 	if err != nil {
@@ -482,7 +517,7 @@ palette {
 theme {
   background = brighten(palette.white, -0.5)
 }
-`
+` + completeANSI
 	path := writeTempHCL(t, hcl)
 	theme, err := Load(path)
 	if err != nil {
@@ -501,7 +536,22 @@ palette {
 }
 
 ansi {
-  black = brighten(palette.base, 0.5)
+  black   = brighten(palette.base, 0.5)
+  red     = "#ff0000"
+  green   = "#00ff00"
+  yellow  = "#ffff00"
+  blue    = "#0000ff"
+  magenta = "#ff00ff"
+  cyan    = "#00ffff"
+  white   = "#ffffff"
+  bright_black   = "#808080"
+  bright_red     = "#ff8080"
+  bright_green   = "#80ff80"
+  bright_yellow  = "#ffff80"
+  bright_blue    = "#8080ff"
+  bright_magenta = "#ff80ff"
+  bright_cyan    = "#80ffff"
+  bright_white   = "#ffffff"
 }
 `
 	path := writeTempHCL(t, hcl)
@@ -528,7 +578,7 @@ syntax {
     italic = true
   }
 }
-`
+` + completeANSI
 	path := writeTempHCL(t, hcl)
 	theme, err := Load(path)
 	if err != nil {

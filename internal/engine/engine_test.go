@@ -72,7 +72,7 @@ func TestRun(t *testing.T) {
 	tmplDir := setupTemplateDir(t, map[string]string{
 		"test.txt.tmpl": `name={{ .Meta.Name }}
 bg={{ hex .Theme.background }}
-cursor={{ hexBare .Theme.cursor }}`,
+cursor={{ bhex .Theme.cursor }}`,
 	})
 	outDir := filepath.Join(t.TempDir(), "output")
 
@@ -225,7 +225,7 @@ func TestRunStyleAccess(t *testing.T) {
 
 func TestRunPaletteFunc(t *testing.T) {
 	tmplDir := setupTemplateDir(t, map[string]string{
-		"test.txt.tmpl": `{{ hex "base" }} {{ hex "highlight.low" }} {{ bhex "highlight.high" }}`,
+		"test.txt.tmpl": `{{ hex "palette.base" }} {{ hex "palette.highlight.low" }} {{ bhex "palette.highlight.high" }}`,
 	})
 	outDir := filepath.Join(t.TempDir(), "output")
 
@@ -251,7 +251,7 @@ func TestRunPaletteFunc(t *testing.T) {
 
 func TestRunStyleFunc(t *testing.T) {
 	tmplDir := setupTemplateDir(t, map[string]string{
-		"test.txt.tmpl": `color={{ (style "custom.bold").Color | hex }} bold={{ (style "custom.bold").Bold }}`,
+		"test.txt.tmpl": `color={{ (style "palette.custom.bold").Color | hex }} bold={{ (style "palette.custom.bold").Bold }}`,
 	})
 	outDir := filepath.Join(t.TempDir(), "output")
 
@@ -272,77 +272,5 @@ func TestRunStyleFunc(t *testing.T) {
 	want := "color=#ff0000 bold=true"
 	if got := string(content); got != want {
 		t.Errorf("got %q, want %q", got, want)
-	}
-}
-
-func TestTemplateFunctions_NewAPI(t *testing.T) {
-	tests := []struct {
-		name     string
-		template string
-		expected string
-	}{
-		{
-			name:     "hex function with top-level path",
-			template: `{{ hex "base" }}`,
-			expected: "#191724",
-		},
-		{
-			name:     "hex function with nested path",
-			template: `{{ hex "highlight.low" }}`,
-			expected: "#21202e",
-		},
-		{
-			name:     "bhex function",
-			template: `{{ bhex "base" }}`,
-			expected: "191724",
-		},
-		{
-			name:     "hexa function",
-			template: `{{ hexa "base" }}`,
-			expected: "#191724ff",
-		},
-		{
-			name:     "bhexa function",
-			template: `{{ bhexa "base" }}`,
-			expected: "191724ff",
-		},
-		{
-			name:     "rgb function",
-			template: `{{ rgb "base" }}`,
-			expected: "rgb(25, 23, 36)",
-		},
-		{
-			name:     "rgba function",
-			template: `{{ rgba "base" }}`,
-			expected: "rgba(25, 23, 36, 1.0)",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tmplDir := setupTemplateDir(t, map[string]string{
-				"test.txt.tmpl": tt.template,
-			})
-			outDir := filepath.Join(t.TempDir(), "output")
-
-			e := &Engine{
-				TemplatesDir: tmplDir,
-				OutputDir:    outDir,
-			}
-
-			if err := e.Run(testTheme()); err != nil {
-				t.Fatalf("Run() error: %v", err)
-			}
-
-			content, err := os.ReadFile(filepath.Join(outDir, "test.txt"))
-			if err != nil {
-				t.Fatalf("reading output: %v", err)
-			}
-
-			got := string(content)
-			if got != tt.expected {
-				t.Errorf("got %q, want %q", got, tt.expected)
-			}
-		})
 	}
 }
