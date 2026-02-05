@@ -175,59 +175,120 @@ func getStyleFromTree(tree color.ColorTree, path []string) color.Style {
 }
 
 func buildTemplateData(theme *config.Theme) templateData {
-	return templateData{
+	data := templateData{
 		Meta:    theme.Meta,
 		Palette: theme.Palette,
 		Theme:   theme.Theme,
 		Syntax:  theme.Syntax,
 		ANSI:    theme.ANSI,
-		FuncMap: template.FuncMap{
-			"hex": func(c color.Color) string {
-				return c.Hex()
-			},
-			"hexBare": func(c color.Color) string {
-				return c.HexBare()
-			},
-			"rgb": func(c color.Color) string {
-				return c.RGB()
-			},
-			"palette": func(path string) color.Color {
-				return getStyleFromPath(theme.Palette, path).Color
-			},
-			"style": func(path string) color.Style {
-				return getStyleFromPath(theme.Palette, path)
-			},
+	}
+
+	// Universal path-based functions
+	data.FuncMap = template.FuncMap{
+		"hex": func(arg any) (string, error) {
+			switch v := arg.(type) {
+			case string:
+				c, err := resolveColorPath(v, data)
+				if err != nil {
+					return "", err
+				}
+				return c.Hex(), nil
+			case color.Color:
+				return v.Hex(), nil
+			default:
+				return "", fmt.Errorf("hex: unsupported type %T", arg)
+			}
+		},
+		"bhex": func(arg any) (string, error) {
+			switch v := arg.(type) {
+			case string:
+				c, err := resolveColorPath(v, data)
+				if err != nil {
+					return "", err
+				}
+				return c.HexBare(), nil
+			case color.Color:
+				return v.HexBare(), nil
+			default:
+				return "", fmt.Errorf("bhex: unsupported type %T", arg)
+			}
+		},
+		"hexa": func(arg any) (string, error) {
+			switch v := arg.(type) {
+			case string:
+				c, err := resolveColorPath(v, data)
+				if err != nil {
+					return "", err
+				}
+				return c.Hexa(), nil
+			case color.Color:
+				return v.Hexa(), nil
+			default:
+				return "", fmt.Errorf("hexa: unsupported type %T", arg)
+			}
+		},
+		"bhexa": func(arg any) (string, error) {
+			switch v := arg.(type) {
+			case string:
+				c, err := resolveColorPath(v, data)
+				if err != nil {
+					return "", err
+				}
+				return c.BareHexa(), nil
+			case color.Color:
+				return v.BareHexa(), nil
+			default:
+				return "", fmt.Errorf("bhexa: unsupported type %T", arg)
+			}
+		},
+		"rgb": func(arg any) (string, error) {
+			switch v := arg.(type) {
+			case string:
+				c, err := resolveColorPath(v, data)
+				if err != nil {
+					return "", err
+				}
+				return c.RGB(), nil
+			case color.Color:
+				return v.RGB(), nil
+			default:
+				return "", fmt.Errorf("rgb: unsupported type %T", arg)
+			}
+		},
+		"rgba": func(arg any) (string, error) {
+			switch v := arg.(type) {
+			case string:
+				c, err := resolveColorPath(v, data)
+				if err != nil {
+					return "", err
+				}
+				return c.RGBA(), nil
+			case color.Color:
+				return v.RGBA(), nil
+			default:
+				return "", fmt.Errorf("rgba: unsupported type %T", arg)
+			}
+		},
+		"style": func(path string) (color.Style, error) {
+			parts := strings.Split(path, ".")
+			if len(parts) < 2 {
+				return color.Style{}, fmt.Errorf("invalid path %q", path)
+			}
+
+			block := parts[0]
+			rest := parts[1:]
+
+			switch block {
+			case "palette":
+				return getStyleFromTree(data.Palette, rest), nil
+			case "syntax":
+				return getStyleFromTree(data.Syntax, rest), nil
+			default:
+				return color.Style{}, fmt.Errorf("style only supports palette/syntax blocks, got %q", block)
+			}
 		},
 	}
+
+	return data
 }
 
-// getStyleFromPath traverses a ColorTree using a dot-separated path
-// and returns the Style at that path. Returns empty Style if not found.
-func getStyleFromPath(tree color.ColorTree, path string) color.Style {
-	parts := strings.Split(path, ".")
-	current := tree
-
-	for i, part := range parts {
-		val, ok := current[part]
-		if !ok {
-			return color.Style{}
-		}
-
-		// Last part should be a Style
-		if i == len(parts)-1 {
-			if style, ok := val.(color.Style); ok {
-				return style
-			}
-			return color.Style{}
-		}
-
-		// Intermediate parts should be ColorTrees
-		if subtree, ok := val.(color.ColorTree); ok {
-			current = subtree
-		} else {
-			return color.Style{}
-		}
-	}
-
-	return color.Style{}
-}

@@ -72,7 +72,7 @@ func TestRun(t *testing.T) {
 	tmplDir := setupTemplateDir(t, map[string]string{
 		"test.txt.tmpl": `name={{ .Meta.Name }}
 bg={{ hex .Theme.background }}
-cursor={{ hexBare .Theme.cursor }}`,
+cursor={{ bhex .Theme.cursor }}`,
 	})
 	outDir := filepath.Join(t.TempDir(), "output")
 
@@ -225,7 +225,7 @@ func TestRunStyleAccess(t *testing.T) {
 
 func TestRunPaletteFunc(t *testing.T) {
 	tmplDir := setupTemplateDir(t, map[string]string{
-		"test.txt.tmpl": `{{ palette "base" | hex }} {{ palette "highlight.low" | hex }} {{ palette "highlight.high" | hexBare }}`,
+		"test.txt.tmpl": `{{ hex "palette.base" }} {{ hex "palette.highlight.low" }} {{ bhex "palette.highlight.high" }}`,
 	})
 	outDir := filepath.Join(t.TempDir(), "output")
 
@@ -251,7 +251,7 @@ func TestRunPaletteFunc(t *testing.T) {
 
 func TestRunStyleFunc(t *testing.T) {
 	tmplDir := setupTemplateDir(t, map[string]string{
-		"test.txt.tmpl": `color={{ (style "custom.bold").Color | hex }} bold={{ (style "custom.bold").Bold }}`,
+		"test.txt.tmpl": `color={{ (style "palette.custom.bold").Color | hex }} bold={{ (style "palette.custom.bold").Bold }}`,
 	})
 	outDir := filepath.Join(t.TempDir(), "output")
 
