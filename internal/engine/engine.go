@@ -220,9 +220,9 @@ func buildTemplateData(theme *config.Theme) templateData {
 				if err != nil {
 					return "", err
 				}
-				return c.Hexa(), nil
+				return c.HexAlpha(), nil
 			case color.Color:
-				return v.Hexa(), nil
+				return v.HexAlpha(), nil
 			default:
 				return "", fmt.Errorf("hexa: unsupported type %T", arg)
 			}
@@ -234,9 +234,9 @@ func buildTemplateData(theme *config.Theme) templateData {
 				if err != nil {
 					return "", err
 				}
-				return c.BareHexa(), nil
+				return c.HexBareAlpha(), nil
 			case color.Color:
-				return v.BareHexa(), nil
+				return v.HexBareAlpha(), nil
 			default:
 				return "", fmt.Errorf("bhexa: unsupported type %T", arg)
 			}

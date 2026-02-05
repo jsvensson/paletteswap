@@ -53,24 +53,22 @@ func (c Color) HexBare() string {
 	return fmt.Sprintf("%02x%02x%02x", c.R, c.G, c.B)
 }
 
+// HexAlpha returns the color in hex format with alpha channel (#rrggbbaa)
+func (c Color) HexAlpha() string {
+	return c.Hex() + "ff"
+}
+
+// HexBareAlpha returns the color in hex format without # prefix and with alpha channel (rrggbbaa)
+func (c Color) HexBareAlpha() string {
+	return c.HexBare() + "ff"
+}
+
 // RGB returns the color as an rgb() string, e.g. "rgb(235, 111, 146)".
 func (c Color) RGB() string {
 	return fmt.Sprintf("rgb(%d, %d, %d)", c.R, c.G, c.B)
 }
 
-// Hexa returns the color as a hex string with alpha channel, e.g. "#eb6f92ff".
-// Alpha is hardcoded to full opacity (ff) for now.
-func (c Color) Hexa() string {
-	return fmt.Sprintf("#%02x%02x%02xff", c.R, c.G, c.B)
-}
-
-// BareHexa returns the color as a hex string with alpha but no hash, e.g. "eb6f92ff".
-// Alpha is hardcoded to full opacity (ff) for now.
-func (c Color) BareHexa() string {
-	return fmt.Sprintf("%02x%02x%02xff", c.R, c.G, c.B)
-}
-
-// RGBA returns the color as an rgba() string with full opacity, e.g. "rgba(235, 111, 146, 1.0)".
+// RGBA returns the color in rgba() function format with full opacity
 func (c Color) RGBA() string {
 	return fmt.Sprintf("rgba(%d, %d, %d, 1.0)", c.R, c.G, c.B)
 }
