@@ -225,7 +225,7 @@ func TestRunStyleAccess(t *testing.T) {
 
 func TestRunPaletteFunc(t *testing.T) {
 	tmplDir := setupTemplateDir(t, map[string]string{
-		"test.txt.tmpl": `{{ palette "base" | hex }} {{ palette "highlight.low" | hex }} {{ palette "highlight.high" | hexBare }}`,
+		"test.txt.tmpl": `{{ hex "base" }} {{ hex "highlight.low" }} {{ bhex "highlight.high" }}`,
 	})
 	outDir := filepath.Join(t.TempDir(), "output")
 
