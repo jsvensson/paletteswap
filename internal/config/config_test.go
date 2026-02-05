@@ -543,3 +543,20 @@ syntax {
 		t.Errorf("Syntax[comment].Color.Hex() = %q, want %q", comment.Color.Hex(), "#3f3f3f")
 	}
 }
+
+func TestBrightenInvalidColor(t *testing.T) {
+	hcl := `
+palette {
+  base = "#000000"
+}
+
+theme {
+  background = brighten("not-a-color", 0.5)
+}
+`
+	path := writeTempHCL(t, hcl)
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("expected error for invalid color in brighten()")
+	}
+}
