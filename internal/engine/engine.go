@@ -116,12 +116,19 @@ func buildTemplateData(theme *config.Theme) templateData {
 			"hexBare": func(c color.Color) string {
 				return c.HexBare()
 			},
-			"bhex": func(path string) (string, error) {
-				style, err := getStyleFromPathWithError(theme.Palette, path)
-				if err != nil {
-					return "", err
+			"bhex": func(v any) (string, error) {
+				switch val := v.(type) {
+				case string:
+					style, err := getStyleFromPathWithError(theme.Palette, val)
+					if err != nil {
+						return "", err
+					}
+					return style.Color.HexBare(), nil
+				case color.Color:
+					return val.HexBare(), nil
+				default:
+					return "", fmt.Errorf("bhex: expected string path or Color, got %T", v)
 				}
-				return style.Color.HexBare(), nil
 			},
 			"hexa": func(path string) (string, error) {
 				style, err := getStyleFromPathWithError(theme.Palette, path)
