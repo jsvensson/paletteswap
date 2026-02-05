@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/jsvensson/paletteswap/internal/color"
 	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/function"
 )
 
 // Theme is the fully-resolved theme data, ready for template rendering.
@@ -235,10 +236,44 @@ func colorTreeToCty(tree color.ColorTree) cty.Value {
 	return cty.ObjectVal(vals)
 }
 
+// makeBrightenFunc creates an HCL function that brightens a color.
+// Usage: brighten("#hex", 0.1) or brighten(palette.color, 0.1)
+func makeBrightenFunc() function.Function {
+	return function.New(&function.Spec{
+		Description: "Brightens a color by the given percentage (-1.0 to 1.0)",
+		Params: []function.Parameter{
+			{
+				Name: "color",
+				Type: cty.String,
+			},
+			{
+				Name: "percentage",
+				Type: cty.Number,
+			},
+		},
+		Type: function.StaticReturnType(cty.String),
+		Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
+			colorHex := args[0].AsString()
+			pct, _ := args[1].AsBigFloat().Float64()
+
+			c, err := color.ParseHex(colorHex)
+			if err != nil {
+				return cty.NilVal, err
+			}
+
+			brightened := color.Brighten(c, pct)
+			return cty.StringVal(brightened.Hex()), nil
+		},
+	})
+}
+
 func buildEvalContext(palette color.ColorTree) *hcl.EvalContext {
 	return &hcl.EvalContext{
 		Variables: map[string]cty.Value{
 			"palette": colorTreeToCty(palette),
+		},
+		Functions: map[string]function.Function{
+			"brighten": makeBrightenFunc(),
 		},
 	}
 }

@@ -67,3 +67,46 @@ func TestColorHexZeroPadding(t *testing.T) {
 		t.Errorf("Color.Hex() = %q, want %q", got, want)
 	}
 }
+
+func TestBrighten(t *testing.T) {
+	tests := []struct {
+		name       string
+		color      Color
+		percentage float64
+		want       Color
+	}{
+		{
+			name:       "brighten red by 10%",
+			color:      Color{255, 0, 0},
+			percentage: 0.1,
+			want:       Color{255, 50, 50},
+		},
+		{
+			name:       "brighten gray by 20%",
+			color:      Color{128, 128, 128},
+			percentage: 0.2,
+			want:       Color{179, 179, 179},
+		},
+		{
+			name:       "white stays white",
+			color:      Color{255, 255, 255},
+			percentage: 0.5,
+			want:       Color{255, 255, 255},
+		},
+		{
+			name:       "brighten black by 50%",
+			color:      Color{0, 0, 0},
+			percentage: 0.5,
+			want:       Color{127, 127, 127},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Brighten(tt.color, tt.percentage)
+			if got != tt.want {
+				t.Errorf("Brighten(%v, %v) = %v, want %v", tt.color, tt.percentage, got, tt.want)
+			}
+		})
+	}
+}

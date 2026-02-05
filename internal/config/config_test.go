@@ -365,13 +365,13 @@ func TestLoadNestedPalette(t *testing.T) {
 	hcl := `
 palette {
   base = "#191724"
-  
+
   highlight {
     low  = "#21202e"
     mid  = "#403d52"
     high = "#524f67"
   }
-  
+
   custom {
     bold {
       color = "#ff0000"
@@ -428,5 +428,135 @@ theme {
 	cursor := theme.Theme["cursor"]
 	if cursor.Hex() != "#524f67" {
 		t.Errorf("Theme[cursor].Hex() = %q, want %q", cursor.Hex(), "#524f67")
+	}
+}
+
+func TestBrightenInTheme(t *testing.T) {
+	hcl := `
+palette {
+  base = "#000000"
+}
+
+theme {
+  background = brighten(palette.base, 0.5)
+}
+`
+	path := writeTempHCL(t, hcl)
+	theme, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	bg := theme.Theme["background"]
+	if bg.Hex() != "#7f7f7f" {
+		t.Errorf("Theme[background].Hex() = %q, want %q", bg.Hex(), "#7f7f7f")
+	}
+}
+
+func TestBrightenWithLiteralHex(t *testing.T) {
+	hcl := `
+palette {
+  base = "#000000"
+}
+
+theme {
+  background = brighten("#000000", 0.5)
+}
+`
+	path := writeTempHCL(t, hcl)
+	theme, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	bg := theme.Theme["background"]
+	if bg.Hex() != "#7f7f7f" {
+		t.Errorf("Theme[background].Hex() = %q, want %q", bg.Hex(), "#7f7f7f")
+	}
+}
+
+func TestBrightenNegative(t *testing.T) {
+	hcl := `
+palette {
+  white = "#ffffff"
+}
+
+theme {
+  background = brighten(palette.white, -0.5)
+}
+`
+	path := writeTempHCL(t, hcl)
+	theme, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	bg := theme.Theme["background"]
+	if bg.Hex() != "#7f7f7f" {
+		t.Errorf("Theme[background].Hex() = %q, want %q", bg.Hex(), "#7f7f7f")
+	}
+}
+
+func TestBrightenInANSI(t *testing.T) {
+	hcl := `
+palette {
+  base = "#000000"
+}
+
+ansi {
+  black = brighten(palette.base, 0.5)
+}
+`
+	path := writeTempHCL(t, hcl)
+	theme, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	black := theme.ANSI["black"]
+	if black.Hex() != "#7f7f7f" {
+		t.Errorf("ANSI[black].Hex() = %q, want %q", black.Hex(), "#7f7f7f")
+	}
+}
+
+func TestBrightenInSyntax(t *testing.T) {
+	hcl := `
+palette {
+  base = "#000000"
+}
+
+syntax {
+  keyword = brighten(palette.base, 0.5)
+  comment {
+    color  = brighten(palette.base, 0.25)
+    italic = true
+  }
+}
+`
+	path := writeTempHCL(t, hcl)
+	theme, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	kw := theme.Syntax["keyword"].(color.Style)
+	if kw.Color.Hex() != "#7f7f7f" {
+		t.Errorf("Syntax[keyword].Color.Hex() = %q, want %q", kw.Color.Hex(), "#7f7f7f")
+	}
+	comment := theme.Syntax["comment"].(color.Style)
+	if comment.Color.Hex() != "#3f3f3f" {
+		t.Errorf("Syntax[comment].Color.Hex() = %q, want %q", comment.Color.Hex(), "#3f3f3f")
+	}
+}
+
+func TestBrightenInvalidColor(t *testing.T) {
+	hcl := `
+palette {
+  base = "#000000"
+}
+
+theme {
+  background = brighten("not-a-color", 0.5)
+}
+`
+	path := writeTempHCL(t, hcl)
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("expected error for invalid color in brighten()")
 	}
 }
