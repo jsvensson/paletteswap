@@ -112,7 +112,7 @@ func NewLoader(path string) (*Loader, error) {
 
 // Decode decodes a value using the palette context.
 // Reusable for any blocks that reference palette values.
-func (l *Loader) Decode(target interface{}) error {
+func (l *Loader) Decode(target any) error {
 	if diags := gohcl.DecodeBody(l.body, l.ctx, target); diags.HasErrors() {
 		return fmt.Errorf("decoding: %s", diags.Error())
 	}
