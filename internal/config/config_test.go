@@ -514,3 +514,32 @@ ansi {
 		t.Errorf("ANSI[black].Hex() = %q, want %q", black.Hex(), "#7f7f7f")
 	}
 }
+
+func TestBrightenInSyntax(t *testing.T) {
+	hcl := `
+palette {
+  base = "#000000"
+}
+
+syntax {
+  keyword = brighten(palette.base, 0.5)
+  comment {
+    color  = brighten(palette.base, 0.25)
+    italic = true
+  }
+}
+`
+	path := writeTempHCL(t, hcl)
+	theme, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	kw := theme.Syntax["keyword"].(color.Style)
+	if kw.Color.Hex() != "#7f7f7f" {
+		t.Errorf("Syntax[keyword].Color.Hex() = %q, want %q", kw.Color.Hex(), "#7f7f7f")
+	}
+	comment := theme.Syntax["comment"].(color.Style)
+	if comment.Color.Hex() != "#3f3f3f" {
+		t.Errorf("Syntax[comment].Color.Hex() = %q, want %q", comment.Color.Hex(), "#3f3f3f")
+	}
+}
