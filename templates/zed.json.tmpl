@@ -7,121 +7,121 @@
       "name": "{{ .Meta.Name }}",
       "appearance": "{{ .Meta.Appearance }}",
       "style": {
-        "background": "{{ hex .Theme.background }}",
-        "editor.background": "{{ hex .Theme.background }}",
-        "editor.foreground": "{{ hex .Theme.foreground }}",
-        "editor.gutter.background": "{{ hex .Theme.background }}",
-        "editor.active_line.background": "{{ hex .Theme.selection }}",
-        "border": "{{ hex .Theme.border }}",
-        "border.variant": "{{ hex .Theme.active_border }}",
-        "tab_bar.background": "{{ hex .Theme.background }}",
-        "tab.inactive_background": "{{ hex .Theme.inactive_tab }}",
-        "tab.active_background": "{{ hex .Theme.active_tab }}",
-        "terminal.background": "{{ hex .Theme.background }}",
-        "terminal.foreground": "{{ hex .Theme.foreground }}",
-        "terminal.ansi.black": "{{ hex .ANSI.black }}",
-        "terminal.ansi.red": "{{ hex .ANSI.red }}",
-        "terminal.ansi.green": "{{ hex .ANSI.green }}",
-        "terminal.ansi.yellow": "{{ hex .ANSI.yellow }}",
-        "terminal.ansi.blue": "{{ hex .ANSI.blue }}",
-        "terminal.ansi.magenta": "{{ hex .ANSI.magenta }}",
-        "terminal.ansi.cyan": "{{ hex .ANSI.cyan }}",
-        "terminal.ansi.white": "{{ hex .ANSI.white }}",
-        "terminal.ansi.bright_black": "{{ hex .ANSI.bright_black }}",
-        "terminal.ansi.bright_red": "{{ hex .ANSI.bright_red }}",
-        "terminal.ansi.bright_green": "{{ hex .ANSI.bright_green }}",
-        "terminal.ansi.bright_yellow": "{{ hex .ANSI.bright_yellow }}",
-        "terminal.ansi.bright_blue": "{{ hex .ANSI.bright_blue }}",
-        "terminal.ansi.bright_magenta": "{{ hex .ANSI.bright_magenta }}",
-        "terminal.ansi.bright_cyan": "{{ hex .ANSI.bright_cyan }}",
-        "terminal.ansi.bright_white": "{{ hex .ANSI.bright_white }}",
+        "background": "{{ hex "theme.background" }}",
+        "editor.background": "{{ hex "theme.background" }}",
+        "editor.foreground": "{{ hex "theme.foreground" }}",
+        "editor.gutter.background": "{{ hex "theme.background" }}",
+        "editor.active_line.background": "{{ hex "theme.selection" }}",
+        "border": "{{ hex "theme.border" }}",
+        "border.variant": "{{ hex "theme.active_border" }}",
+        "tab_bar.background": "{{ hex "theme.background" }}",
+        "tab.inactive_background": "{{ hex "theme.inactive_tab" }}",
+        "tab.active_background": "{{ hex "theme.active_tab" }}",
+        "terminal.background": "{{ hex "theme.background" }}",
+        "terminal.foreground": "{{ hex "theme.foreground" }}",
+        "terminal.ansi.black": "{{ hex "ansi.black" }}",
+        "terminal.ansi.red": "{{ hex "ansi.red" }}",
+        "terminal.ansi.green": "{{ hex "ansi.green" }}",
+        "terminal.ansi.yellow": "{{ hex "ansi.yellow" }}",
+        "terminal.ansi.blue": "{{ hex "ansi.blue" }}",
+        "terminal.ansi.magenta": "{{ hex "ansi.magenta" }}",
+        "terminal.ansi.cyan": "{{ hex "ansi.cyan" }}",
+        "terminal.ansi.white": "{{ hex "ansi.white" }}",
+        "terminal.ansi.bright_black": "{{ hex "ansi.bright_black" }}",
+        "terminal.ansi.bright_red": "{{ hex "ansi.bright_red" }}",
+        "terminal.ansi.bright_green": "{{ hex "ansi.bright_green" }}",
+        "terminal.ansi.bright_yellow": "{{ hex "ansi.bright_yellow" }}",
+        "terminal.ansi.bright_blue": "{{ hex "ansi.bright_blue" }}",
+        "terminal.ansi.bright_magenta": "{{ hex "ansi.bright_magenta" }}",
+        "terminal.ansi.bright_cyan": "{{ hex "ansi.bright_cyan" }}",
+        "terminal.ansi.bright_white": "{{ hex "ansi.bright_white" }}",
         "syntax": {
           {{- with index .Syntax "keyword" }}
           "keyword": {
-            "color": "{{ .Color | hex }}"
+            "color": "{{ hex "syntax.keyword" }}"
             {{- if .Bold }}, "font_weight": 700{{ end }}
             {{- if .Italic }}, "font_style": "italic"{{ end }}
           },
           {{- end }}
           {{- with index .Syntax "string" }}
           "string": {
-            "color": "{{ .Color | hex }}"
+            "color": "{{ hex "syntax.string" }}"
             {{- if .Bold }}, "font_weight": 700{{ end }}
             {{- if .Italic }}, "font_style": "italic"{{ end }}
           },
           {{- end }}
           {{- with index .Syntax "comment" }}
           "comment": {
-            "color": "{{ .Color | hex }}"
+            "color": "{{ hex "syntax.comment" }}"
             {{- if .Bold }}, "font_weight": 700{{ end }}
             {{- if .Italic }}, "font_style": "italic"{{ end }}
           },
           {{- end }}
           {{- with index .Syntax "variable" }}
           "variable": {
-            "color": "{{ .Color | hex }}"
+            "color": "{{ hex "syntax.variable" }}"
             {{- if .Bold }}, "font_weight": 700{{ end }}
             {{- if .Italic }}, "font_style": "italic"{{ end }}
           },
           {{- end }}
           {{- with index .Syntax "function" }}
           "function": {
-            "color": "{{ .Color | hex }}"
+            "color": "{{ hex "syntax.function" }}"
             {{- if .Bold }}, "font_weight": 700{{ end }}
             {{- if .Italic }}, "font_style": "italic"{{ end }}
           },
           {{- end }}
           {{- with index .Syntax "type" }}
           "type": {
-            "color": "{{ .Color | hex }}"
+            "color": "{{ hex "syntax.type" }}"
             {{- if .Bold }}, "font_weight": 700{{ end }}
             {{- if .Italic }}, "font_style": "italic"{{ end }}
           },
           {{- end }}
           {{- with index .Syntax "constant" }}
           "constant": {
-            "color": "{{ .Color | hex }}"
+            "color": "{{ hex "syntax.constant" }}"
             {{- if .Bold }}, "font_weight": 700{{ end }}
             {{- if .Italic }}, "font_style": "italic"{{ end }}
           },
           {{- end }}
           {{- with index .Syntax "number" }}
           "number": {
-            "color": "{{ .Color | hex }}"
+            "color": "{{ hex "syntax.number" }}"
             {{- if .Bold }}, "font_weight": 700{{ end }}
             {{- if .Italic }}, "font_style": "italic"{{ end }}
           },
           {{- end }}
           {{- with index .Syntax "boolean" }}
           "boolean": {
-            "color": "{{ .Color | hex }}"
+            "color": "{{ hex "syntax.boolean" }}"
             {{- if .Bold }}, "font_weight": 700{{ end }}
             {{- if .Italic }}, "font_style": "italic"{{ end }}
           },
           {{- end }}
           {{- with index .Syntax "property" }}
           "property": {
-            "color": "{{ .Color | hex }}"
+            "color": "{{ hex "syntax.property" }}"
             {{- if .Bold }}, "font_weight": 700{{ end }}
             {{- if .Italic }}, "font_style": "italic"{{ end }}
           },
           {{- end }}
           {{- with index .Syntax "tag" }}
           "tag": {
-            "color": "{{ .Color | hex }}"
+            "color": "{{ hex "syntax.tag" }}"
             {{- if .Bold }}, "font_weight": 700{{ end }}
             {{- if .Italic }}, "font_style": "italic"{{ end }}
           },
           {{- end }}
           {{- with index .Syntax "attribute" }}
           "attribute": {
-            "color": "{{ .Color | hex }}"
+            "color": "{{ hex "syntax.attribute" }}"
             {{- if .Bold }}, "font_weight": 700{{ end }}
             {{- if .Italic }}, "font_style": "italic"{{ end }}
           }
           {{- end }}
         },
-        "link_text.accent": "{{ hex .Theme.url }}"
+        "link_text.accent": "{{ hex "theme.url" }}"
       }
     }
   ]
