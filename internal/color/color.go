@@ -57,3 +57,8 @@ func (c Color) HexBare() string {
 func (c Color) RGB() string {
 	return fmt.Sprintf("rgb(%d, %d, %d)", c.R, c.G, c.B)
 }
+
+// RGBA returns the color in rgba() function format with full opacity
+func (c Color) RGBA() string {
+	return fmt.Sprintf("rgba(%d, %d, %d, 1.0)", c.R, c.G, c.B)
+}

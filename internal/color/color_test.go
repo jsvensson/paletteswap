@@ -110,3 +110,36 @@ func TestBrighten(t *testing.T) {
 		})
 	}
 }
+
+func TestColor_RGBA(t *testing.T) {
+	tests := []struct {
+		name     string
+		color    Color
+		expected string
+	}{
+		{
+			name:     "red with full opacity",
+			color:    Color{255, 0, 0},
+			expected: "rgba(255, 0, 0, 1.0)",
+		},
+		{
+			name:     "green with full opacity",
+			color:    Color{0, 255, 0},
+			expected: "rgba(0, 255, 0, 1.0)",
+		},
+		{
+			name:     "dark color",
+			color:    Color{25, 23, 36},
+			expected: "rgba(25, 23, 36, 1.0)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.color.RGBA()
+			if got != tt.expected {
+				t.Errorf("RGBA() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
