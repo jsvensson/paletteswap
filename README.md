@@ -5,7 +5,29 @@ PaletteSwap generates application-specific color themes from a single theme sour
 ## HCL Theme Format
 
 > [!WARNING]
-> PaletteSwap is still in early development. The theme and templates formats are subject to breaking changes.
+> PaletteSwap is still in early development. The theme and templates formats are subject to breaking changes. Version 0.2.0 introduced a breaking change to the template API - see migration guide below.
+
+### Migration from v0.1.x to v0.2.x
+
+The template API has been redesigned for clarity. Update your custom templates:
+
+**Old syntax (v0.1.x):**
+```
+{{ palette "highlight.low" | hex }}
+{{ palette "base" | hexBare }}
+```
+
+**New syntax (v0.2.x):**
+```
+{{ hex "highlight.low" }}
+{{ bhex "base" }}
+```
+
+**Conversion rules:**
+- `palette "X" | hex` → `hex "X"`
+- `palette "X" | hexBare` → `bhex "X"`
+- `palette "X" | rgb` → `rgb "X"`
+- Direct field access unchanged: `{{ hexBare .Theme.background }}` → `{{ bhex .Theme.background }}`
 
 Themes are defined in HCL with a clear, hierarchical structure:
 
@@ -43,11 +65,11 @@ palette {
 
 Palette colors can be referenced by other blocks using `palette.<name>` syntax for direct colors, or `palette.<scope>.<name>` for nested colors.
 
-All palette values are accessible in templates using the `palette` function with dot-notation paths:
+All palette values are accessible in templates using color formatting functions with dot-notation paths:
 
 ```text
-{{ palette "highlight.low" | hex }}
-{{ palette "base" | hexBare }}
+{{ hex "highlight.low" }}
+{{ bhex "base" }}
 ```
 
 To access style flags (bold, italic, underline), use the `style` function:
@@ -158,20 +180,27 @@ Templates transform your theme data into application-specific config files. They
 
 ### Template Functions
 
-- `hex` - outputs color as quoted hex (e.g., `"#191724"`)
-- `hexBare` - outputs color as bare hex (e.g., `191724`)
-- `rgb` - outputs color as rgb() format (e.g., `rgb(25, 23, 36)`)
-- `palette` - returns a Color from the palette by dot-notation path (e.g., `palette "highlight.low"`)
-- `style` - returns a Style from the palette by dot-notation path (e.g., `style "custom.bold"`)
+**Color Formatting Functions:**
+- `hex "path"` - hex with hash prefix (e.g., `#191724`)
+- `bhex "path"` - bare hex without hash (e.g., `191724`)
+- `hexa "path"` - hex with alpha channel (e.g., `#191724ff`)
+- `bhexa "path"` - bare hex with alpha (e.g., `191724ff`)
+- `rgb "path"` - RGB function format (e.g., `rgb(25, 23, 36)`)
+- `rgba "path"` - RGBA with alpha (e.g., `rgba(25, 23, 36, 1.0)`)
+
+All functions accept dot-notation palette paths (e.g., `"highlight.low"`, `"base"`).
+
+**Style Access:**
+- `style "path"` - returns a Style object with `.Bold`, `.Italic`, `.Underline` flags
 
 ### Example Templates
 
 **Ghostty terminal** (`ghostty.tmpl`):
 
 ```
-background = {{ hexBare .Theme.background }}
-foreground = {{ hexBare .Theme.foreground }}
-cursor-color = {{ hexBare .Theme.cursor }}
+background = {{ bhex .Theme.background }}
+foreground = {{ bhex .Theme.foreground }}
+cursor-color = {{ bhex .Theme.cursor }}
 ```
 
 **Zed editor** (`zed.json.tmpl`):
