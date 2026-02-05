@@ -56,6 +56,32 @@ To access style flags (bold, italic, underline), use the `style` function:
 {{ if (style "custom.bold").Bold }}bold{{ end }}
 ```
 
+### HCL Functions
+
+#### brighten()
+
+The `brighten(color, percentage)` function creates lighter or darker variations of colors by adjusting lightness in HSL color space.
+
+```hcl
+palette {
+  base = "#191724"
+  surface = brighten(base, 0.1)        # 10% lighter
+  overlay = brighten(base, -0.1)       # 10% darker (negative percentage)
+}
+
+theme {
+  background = palette.base
+  surface    = brighten(palette.base, 0.05)   # derive from palette
+  highlight  = brighten("#ffffff", -0.2)      # or use literal hex
+}
+```
+
+Parameters:
+- `color` - hex string (e.g., `"#191724"`) or palette reference (e.g., `base` or `palette.highlight.low`)
+- `percentage` - float value where positive brightens and negative darkens (typically -1.0 to 1.0)
+
+The function works in all HCL blocks: `palette`, `theme`, `ansi`, and `syntax`.
+
 ### Theme Block
 
 Maps palette colors to UI elements:
@@ -64,8 +90,8 @@ Maps palette colors to UI elements:
 theme {
   background = palette.base
   foreground = palette.text
-  cursor     = palette.highlight_high
-  selection  = palette.highlight_med
+  cursor     = palette.highlight.high
+  selection  = palette.highlight.mid
 }
 ```
 
