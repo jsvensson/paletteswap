@@ -365,13 +365,13 @@ func TestLoadNestedPalette(t *testing.T) {
 	hcl := `
 palette {
   base = "#191724"
-  
+
   highlight {
     low  = "#21202e"
     mid  = "#403d52"
     high = "#524f67"
   }
-  
+
   custom {
     bold {
       color = "#ff0000"
@@ -428,5 +428,26 @@ theme {
 	cursor := theme.Theme["cursor"]
 	if cursor.Hex() != "#524f67" {
 		t.Errorf("Theme[cursor].Hex() = %q, want %q", cursor.Hex(), "#524f67")
+	}
+}
+
+func TestBrightenInTheme(t *testing.T) {
+	hcl := `
+palette {
+  base = "#000000"
+}
+
+theme {
+  background = brighten(palette.base, 0.5)
+}
+`
+	path := writeTempHCL(t, hcl)
+	theme, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() error: %v", err)
+	}
+	bg := theme.Theme["background"]
+	if bg.Hex() != "#7f7f7f" {
+		t.Errorf("Theme[background].Hex() = %q, want %q", bg.Hex(), "#7f7f7f")
 	}
 }
