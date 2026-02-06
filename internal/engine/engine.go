@@ -84,9 +84,9 @@ func (e *Engine) renderTemplate(tmplPath, outputName string, data templateData) 
 // templateData is the data passed to templates.
 type templateData struct {
 	Meta    config.Meta
-	Palette color.ColorTree
+	Palette color.Tree
 	Theme   map[string]color.Color
-	Syntax  color.ColorTree
+	Syntax  color.Tree
 	ANSI    map[string]color.Color
 	FuncMap template.FuncMap
 }
@@ -142,8 +142,8 @@ func resolveColorPath(path string, data templateData) (color.Color, error) {
 	}
 }
 
-// getStyleFromTree traverses a ColorTree using path segments and returns the Style.
-func getStyleFromTree(tree color.ColorTree, path []string) color.Style {
+// getStyleFromTree traverses a Tree using path segments and returns the Style.
+func getStyleFromTree(tree color.Tree, path []string) color.Style {
 	if len(path) == 0 {
 		return color.Style{}
 	}
@@ -163,8 +163,8 @@ func getStyleFromTree(tree color.ColorTree, path []string) color.Style {
 			return color.Style{}
 		}
 
-		// Intermediate parts should be ColorTrees
-		if subtree, ok := val.(color.ColorTree); ok {
+		// Intermediate parts should be Trees
+		if subtree, ok := val.(color.Tree); ok {
 			current = subtree
 		} else {
 			return color.Style{}

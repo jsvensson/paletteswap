@@ -182,9 +182,9 @@ func TestLoadSyntax(t *testing.T) {
 	}
 
 	// Nested syntax block
-	markup, ok := theme.Syntax["markup"].(color.ColorTree)
+	markup, ok := theme.Syntax["markup"].(color.Tree)
 	if !ok {
-		t.Fatal("Syntax[markup] is not a ColorTree")
+		t.Fatal("Syntax[markup] is not a Tree")
 	}
 	heading, ok := markup["heading"].(color.Style)
 	if !ok {
@@ -327,9 +327,9 @@ syntax {
 	if err != nil {
 		t.Fatalf("Load() error: %v", err)
 	}
-	markup, ok := theme.Syntax["markup"].(color.ColorTree)
+	markup, ok := theme.Syntax["markup"].(color.Tree)
 	if !ok {
-		t.Fatal("Syntax[markup] is not a ColorTree")
+		t.Fatal("Syntax[markup] is not a Tree")
 	}
 	bold, ok := markup["bold"].(color.Style)
 	if !ok {
@@ -433,9 +433,9 @@ theme {
 	}
 
 	// Check nested color
-	highlight, ok := theme.Palette["highlight"].(color.ColorTree)
+	highlight, ok := theme.Palette["highlight"].(color.Tree)
 	if !ok {
-		t.Fatal("Palette[highlight] is not a ColorTree")
+		t.Fatal("Palette[highlight] is not a Tree")
 	}
 	low := highlight["low"].(color.Style)
 	if low.Color.Hex() != "#21202e" {
@@ -447,9 +447,9 @@ theme {
 	}
 
 	// Check nested style block
-	custom, ok := theme.Palette["custom"].(color.ColorTree)
+	custom, ok := theme.Palette["custom"].(color.Tree)
 	if !ok {
-		t.Fatal("Palette[custom] is not a ColorTree")
+		t.Fatal("Palette[custom] is not a Tree")
 	}
 	bold := custom["bold"].(color.Style)
 	if bold.Color.Hex() != "#ff0000" {

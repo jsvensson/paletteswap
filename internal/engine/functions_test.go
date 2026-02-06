@@ -12,7 +12,7 @@ import (
 
 func TestTemplateFunctions_Hex(t *testing.T) {
 	theme := &config.Theme{
-		Palette: color.ColorTree{
+		Palette: color.Tree{
 			"base": color.Style{Color: color.Color{R: 25, G: 23, B: 36}},
 		},
 		Theme: map[string]color.Color{
@@ -21,7 +21,7 @@ func TestTemplateFunctions_Hex(t *testing.T) {
 		ANSI: map[string]color.Color{
 			"black": {R: 0, G: 0, B: 0},
 		},
-		Syntax: color.ColorTree{
+		Syntax: color.Tree{
 			"keyword": color.Style{Color: color.Color{R: 49, G: 116, B: 143}},
 		},
 	}
@@ -203,7 +203,7 @@ func TestTemplateFunctions_RGBA(t *testing.T) {
 
 func TestTemplateFunctions_Style(t *testing.T) {
 	theme := &config.Theme{
-		Syntax: color.ColorTree{
+		Syntax: color.Tree{
 			"keyword": color.Style{
 				Color: color.Color{R: 49, G: 116, B: 143},
 				Bold:  true,
