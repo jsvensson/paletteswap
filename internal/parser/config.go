@@ -302,6 +302,37 @@ func makeBrightenFunc() function.Function {
 	})
 }
 
+// makeDarkenFunc creates an HCL function that darkens a color.
+// Usage: darken("#hex", 0.1) or darken(palette.color, 0.1)
+func makeDarkenFunc() function.Function {
+	return function.New(&function.Spec{
+		Description: "Darkens a color by the given percentage (0.0 to 1.0)",
+		Params: []function.Parameter{
+			{
+				Name: "color",
+				Type: cty.String,
+			},
+			{
+				Name: "percentage",
+				Type: cty.Number,
+			},
+		},
+		Type: function.StaticReturnType(cty.String),
+		Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
+			colorHex := args[0].AsString()
+			pct, _ := args[1].AsBigFloat().Float64()
+
+			c, err := color.ParseHex(colorHex)
+			if err != nil {
+				return cty.NilVal, err
+			}
+
+			darkened := color.Darken(c, pct)
+			return cty.StringVal(darkened.Hex()), nil
+		},
+	})
+}
+
 func buildEvalContext(palette color.Tree) *hcl.EvalContext {
 	return &hcl.EvalContext{
 		Variables: map[string]cty.Value{
@@ -309,6 +340,7 @@ func buildEvalContext(palette color.Tree) *hcl.EvalContext {
 		},
 		Functions: map[string]function.Function{
 			"brighten": makeBrightenFunc(),
+			"darken":   makeDarkenFunc(),
 		},
 	}
 }

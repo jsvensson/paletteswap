@@ -610,3 +610,62 @@ theme {
 		t.Fatal("expected error for invalid color in brighten()")
 	}
 }
+
+func TestDarkenInTheme(t *testing.T) {
+	hcl := `
+palette {
+  white = "#ffffff"
+}
+
+theme {
+  background = darken(palette.white, 0.5)
+}
+` + completeANSI
+	path := writeTempHCL(t, hcl)
+	theme, err := Parse(path)
+	if err != nil {
+		t.Fatalf("Parse() error: %v", err)
+	}
+	bg := theme.Theme["background"]
+	if bg.Hex() != "#7f7f7f" {
+		t.Errorf("Theme[background].Hex() = %q, want %q", bg.Hex(), "#7f7f7f")
+	}
+}
+
+func TestDarkenWithLiteralHex(t *testing.T) {
+	hcl := `
+palette {
+  white = "#ffffff"
+}
+
+theme {
+  background = darken("#ffffff", 0.5)
+}
+` + completeANSI
+	path := writeTempHCL(t, hcl)
+	theme, err := Parse(path)
+	if err != nil {
+		t.Fatalf("Parse() error: %v", err)
+	}
+	bg := theme.Theme["background"]
+	if bg.Hex() != "#7f7f7f" {
+		t.Errorf("Theme[background].Hex() = %q, want %q", bg.Hex(), "#7f7f7f")
+	}
+}
+
+func TestDarkenInvalidColor(t *testing.T) {
+	hcl := `
+palette {
+  base = "#000000"
+}
+
+theme {
+  background = darken("not-a-color", 0.5)
+}
+`
+	path := writeTempHCL(t, hcl)
+	_, err := Parse(path)
+	if err == nil {
+		t.Fatal("expected error for invalid color in darken()")
+	}
+}
