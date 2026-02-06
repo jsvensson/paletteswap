@@ -43,7 +43,7 @@ ansi {
 	tmpFile := writeThemeFile(t, theme)
 	defer os.Remove(tmpFile)
 
-	_, err := Load(tmpFile)
+	_, err := Parse(tmpFile)
 	if err != nil {
 		t.Fatalf("complete ANSI should not error: %v", err)
 	}
@@ -71,7 +71,7 @@ ansi {
 	tmpFile := writeThemeFile(t, theme)
 	defer os.Remove(tmpFile)
 
-	_, err := Load(tmpFile)
+	_, err := Parse(tmpFile)
 	if err == nil {
 		t.Fatal("expected error for incomplete ANSI, got nil")
 	}
@@ -102,7 +102,7 @@ theme {
 	tmpFile := writeThemeFile(t, theme)
 	defer os.Remove(tmpFile)
 
-	_, err := Load(tmpFile)
+	_, err := Parse(tmpFile)
 	if err == nil {
 		t.Fatal("expected error for missing ANSI block, got nil")
 	}

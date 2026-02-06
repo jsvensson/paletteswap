@@ -1,4 +1,4 @@
-package engine
+package paletteswap
 
 import (
 	"os"
@@ -7,12 +7,11 @@ import (
 	"testing"
 
 	"github.com/jsvensson/paletteswap/internal/color"
-	"github.com/jsvensson/paletteswap/internal/parser"
 )
 
-func testTheme() *parser.Theme {
-	return &parser.Theme{
-		Meta: parser.Meta{
+func testTheme() *Theme {
+	return &Theme{
+		Meta: Meta{
 			Name:       "Test Theme",
 			Author:     "Tester",
 			Appearance: "dark",

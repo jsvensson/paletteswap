@@ -98,9 +98,9 @@ func writeTempHCL(t *testing.T, content string) string {
 
 func TestLoadMeta(t *testing.T) {
 	path := writeTempHCL(t, sampleHCL)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 	if theme.Meta.Name != "Rose Pine" {
 		t.Errorf("Meta.Name = %q, want %q", theme.Meta.Name, "Rose Pine")
@@ -118,9 +118,9 @@ func TestLoadMeta(t *testing.T) {
 
 func TestLoadPalette(t *testing.T) {
 	path := writeTempHCL(t, sampleHCL)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 	if len(theme.Palette) != 6 {
 		t.Errorf("len(Palette) = %d, want 6", len(theme.Palette))
@@ -133,9 +133,9 @@ func TestLoadPalette(t *testing.T) {
 
 func TestLoadTheme(t *testing.T) {
 	path := writeTempHCL(t, sampleHCL)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 	bg := theme.Theme["background"]
 	if bg.Hex() != "#191724" {
@@ -149,9 +149,9 @@ func TestLoadTheme(t *testing.T) {
 
 func TestLoadSyntax(t *testing.T) {
 	path := writeTempHCL(t, sampleHCL)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 
 	// Top-level syntax attribute (plain color becomes Style with no style flags)
@@ -197,9 +197,9 @@ func TestLoadSyntax(t *testing.T) {
 
 func TestLoadANSI(t *testing.T) {
 	path := writeTempHCL(t, sampleHCL)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 	black := theme.ANSI["black"]
 	if black.Hex() != "#191724" {
@@ -218,7 +218,7 @@ meta {
 }
 `
 	path := writeTempHCL(t, hcl)
-	_, err := Load(path)
+	_, err := Parse(path)
 	if err == nil {
 		t.Fatal("expected error for missing palette block")
 	}
@@ -231,7 +231,7 @@ palette {
 }
 `
 	path := writeTempHCL(t, hcl)
-	_, err := Load(path)
+	_, err := Parse(path)
 	if err == nil {
 		t.Fatal("expected error for invalid hex color")
 	}
@@ -252,9 +252,9 @@ syntax {
 }
 ` + completeANSI
 	path := writeTempHCL(t, hcl)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 	kw, ok := theme.Syntax["keyword"].(color.Style)
 	if !ok {
@@ -287,9 +287,9 @@ syntax {
 }
 ` + completeANSI
 	path := writeTempHCL(t, hcl)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 	link, ok := theme.Syntax["link"].(color.Style)
 	if !ok {
@@ -323,9 +323,9 @@ syntax {
 }
 ` + completeANSI
 	path := writeTempHCL(t, hcl)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 	markup, ok := theme.Syntax["markup"].(color.Tree)
 	if !ok {
@@ -370,7 +370,7 @@ syntax {
 			t.Fatal("expected panic when style block is missing color attribute")
 		}
 	}()
-	_, _ = Load(path)
+	_, _ = Parse(path)
 }
 
 func TestLoadStyleUnknownAttribute(t *testing.T) {
@@ -387,7 +387,7 @@ syntax {
 }
 ` + completeANSI
 	path := writeTempHCL(t, hcl)
-	_, err := Load(path)
+	_, err := Parse(path)
 	if err == nil {
 		t.Fatal("expected error for unknown attribute 'boldd'")
 	}
@@ -421,9 +421,9 @@ theme {
 }
 ` + completeANSI
 	path := writeTempHCL(t, hcl)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 
 	// Check direct color
@@ -477,9 +477,9 @@ theme {
 }
 ` + completeANSI
 	path := writeTempHCL(t, hcl)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 	bg := theme.Theme["background"]
 	if bg.Hex() != "#7f7f7f" {
@@ -498,9 +498,9 @@ theme {
 }
 ` + completeANSI
 	path := writeTempHCL(t, hcl)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 	bg := theme.Theme["background"]
 	if bg.Hex() != "#7f7f7f" {
@@ -519,9 +519,9 @@ theme {
 }
 ` + completeANSI
 	path := writeTempHCL(t, hcl)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 	bg := theme.Theme["background"]
 	if bg.Hex() != "#7f7f7f" {
@@ -555,9 +555,9 @@ ansi {
 }
 `
 	path := writeTempHCL(t, hcl)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 	black := theme.ANSI["black"]
 	if black.Hex() != "#7f7f7f" {
@@ -580,9 +580,9 @@ syntax {
 }
 ` + completeANSI
 	path := writeTempHCL(t, hcl)
-	theme, err := Load(path)
+	theme, err := Parse(path)
 	if err != nil {
-		t.Fatalf("Load() error: %v", err)
+		t.Fatalf("Parse() error: %v", err)
 	}
 	kw := theme.Syntax["keyword"].(color.Style)
 	if kw.Color.Hex() != "#7f7f7f" {
@@ -605,7 +605,7 @@ theme {
 }
 `
 	path := writeTempHCL(t, hcl)
-	_, err := Load(path)
+	_, err := Parse(path)
 	if err == nil {
 		t.Fatal("expected error for invalid color in brighten()")
 	}

@@ -22,8 +22,8 @@ var requiredANSIColors = []string{
 	"bright_blue", "bright_magenta", "bright_cyan", "bright_white",
 }
 
-// Theme is the fully-resolved theme data, ready for template rendering.
-type Theme struct {
+// ParseResult holds the raw parsed theme data.
+type ParseResult struct {
 	Meta    Meta
 	Palette color.Tree
 	Syntax  color.Tree
@@ -186,8 +186,8 @@ func validateANSI(ansi map[string]color.Color) error {
 	return nil
 }
 
-// Load parses an HCL theme file and returns a fully-resolved Theme.
-func Load(path string) (*Theme, error) {
+// Parse parses an HCL theme file and returns a fully-resolved ParseResult.
+func Parse(path string) (*ParseResult, error) {
 	loader, err := NewLoader(path)
 	if err != nil {
 		return nil, err
@@ -239,7 +239,7 @@ func Load(path string) (*Theme, error) {
 		meta = *resolved.Meta
 	}
 
-	return &Theme{
+	return &ParseResult{
 		Meta:    meta,
 		Palette: loader.Palette(),
 		Theme:   themeColors,
