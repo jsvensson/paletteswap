@@ -9,7 +9,7 @@ import (
 	"text/template"
 
 	"github.com/jsvensson/paletteswap/internal/color"
-	"github.com/jsvensson/paletteswap/internal/config"
+	"github.com/jsvensson/paletteswap/internal/parser"
 )
 
 // Engine loads and executes Go templates against a resolved Theme.
@@ -21,7 +21,7 @@ type Engine struct {
 
 // Run loads all .tmpl files from the templates directory, executes them
 // with the given theme data, and writes output files.
-func (e *Engine) Run(theme *config.Theme) error {
+func (e *Engine) Run(theme *parser.Theme) error {
 	pattern := filepath.Join(e.TemplatesDir, "*.tmpl")
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
@@ -83,7 +83,7 @@ func (e *Engine) renderTemplate(tmplPath, outputName string, data templateData) 
 
 // templateData is the data passed to templates.
 type templateData struct {
-	Meta    config.Meta
+	Meta    parser.Meta
 	Palette color.Tree
 	Theme   map[string]color.Color
 	Syntax  color.Tree
@@ -174,7 +174,7 @@ func getStyleFromTree(tree color.Tree, path []string) color.Style {
 	return color.Style{}
 }
 
-func buildTemplateData(theme *config.Theme) templateData {
+func buildTemplateData(theme *parser.Theme) templateData {
 	data := templateData{
 		Meta:    theme.Meta,
 		Palette: theme.Palette,

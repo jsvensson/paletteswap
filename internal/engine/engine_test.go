@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	"github.com/jsvensson/paletteswap/internal/color"
-	"github.com/jsvensson/paletteswap/internal/config"
+	"github.com/jsvensson/paletteswap/internal/parser"
 )
 
-func testTheme() *config.Theme {
-	return &config.Theme{
-		Meta: config.Meta{
+func testTheme() *parser.Theme {
+	return &parser.Theme{
+		Meta: parser.Meta{
 			Name:       "Test Theme",
 			Author:     "Tester",
 			Appearance: "dark",

@@ -7,11 +7,11 @@ import (
 	"text/template"
 
 	"github.com/jsvensson/paletteswap/internal/color"
-	"github.com/jsvensson/paletteswap/internal/config"
+	"github.com/jsvensson/paletteswap/internal/parser"
 )
 
 func TestTemplateFunctions_Hex(t *testing.T) {
-	theme := &config.Theme{
+	theme := &parser.Theme{
 		Palette: color.Tree{
 			"base": color.Style{Color: color.Color{R: 25, G: 23, B: 36}},
 		},
@@ -61,7 +61,7 @@ func TestTemplateFunctions_Hex(t *testing.T) {
 }
 
 func TestTemplateFunctions_Bhex(t *testing.T) {
-	theme := &config.Theme{
+	theme := &parser.Theme{
 		Theme: map[string]color.Color{
 			"background": {R: 25, G: 23, B: 36},
 		},
@@ -87,7 +87,7 @@ func TestTemplateFunctions_Bhex(t *testing.T) {
 }
 
 func TestTemplateFunctions_Hexa(t *testing.T) {
-	theme := &config.Theme{
+	theme := &parser.Theme{
 		Theme: map[string]color.Color{
 			"background": {R: 25, G: 23, B: 36},
 		},
@@ -113,7 +113,7 @@ func TestTemplateFunctions_Hexa(t *testing.T) {
 }
 
 func TestTemplateFunctions_Bhexa(t *testing.T) {
-	theme := &config.Theme{
+	theme := &parser.Theme{
 		Theme: map[string]color.Color{
 			"background": {R: 25, G: 23, B: 36},
 		},
@@ -139,7 +139,7 @@ func TestTemplateFunctions_Bhexa(t *testing.T) {
 }
 
 func TestTemplateFunctions_RGB(t *testing.T) {
-	theme := &config.Theme{
+	theme := &parser.Theme{
 		Theme: map[string]color.Color{
 			"background": {R: 25, G: 23, B: 36},
 		},
@@ -176,7 +176,7 @@ func TestTemplateFunctions_RGB(t *testing.T) {
 }
 
 func TestTemplateFunctions_RGBA(t *testing.T) {
-	theme := &config.Theme{
+	theme := &parser.Theme{
 		Theme: map[string]color.Color{
 			"background": {R: 25, G: 23, B: 36},
 		},
@@ -202,7 +202,7 @@ func TestTemplateFunctions_RGBA(t *testing.T) {
 }
 
 func TestTemplateFunctions_Style(t *testing.T) {
-	theme := &config.Theme{
+	theme := &parser.Theme{
 		Syntax: color.Tree{
 			"keyword": color.Style{
 				Color: color.Color{R: 49, G: 116, B: 143},
