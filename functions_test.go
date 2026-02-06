@@ -1,4 +1,4 @@
-package engine
+package paletteswap
 
 import (
 	"bytes"
@@ -7,12 +7,11 @@ import (
 	"text/template"
 
 	"github.com/jsvensson/paletteswap/internal/color"
-	"github.com/jsvensson/paletteswap/internal/config"
 )
 
 func TestTemplateFunctions_Hex(t *testing.T) {
-	theme := &config.Theme{
-		Palette: color.ColorTree{
+	theme := &Theme{
+		Palette: color.Tree{
 			"base": color.Style{Color: color.Color{R: 25, G: 23, B: 36}},
 		},
 		Theme: map[string]color.Color{
@@ -21,7 +20,7 @@ func TestTemplateFunctions_Hex(t *testing.T) {
 		ANSI: map[string]color.Color{
 			"black": {R: 0, G: 0, B: 0},
 		},
-		Syntax: color.ColorTree{
+		Syntax: color.Tree{
 			"keyword": color.Style{Color: color.Color{R: 49, G: 116, B: 143}},
 		},
 	}
@@ -61,7 +60,7 @@ func TestTemplateFunctions_Hex(t *testing.T) {
 }
 
 func TestTemplateFunctions_Bhex(t *testing.T) {
-	theme := &config.Theme{
+	theme := &Theme{
 		Theme: map[string]color.Color{
 			"background": {R: 25, G: 23, B: 36},
 		},
@@ -87,7 +86,7 @@ func TestTemplateFunctions_Bhex(t *testing.T) {
 }
 
 func TestTemplateFunctions_Hexa(t *testing.T) {
-	theme := &config.Theme{
+	theme := &Theme{
 		Theme: map[string]color.Color{
 			"background": {R: 25, G: 23, B: 36},
 		},
@@ -113,7 +112,7 @@ func TestTemplateFunctions_Hexa(t *testing.T) {
 }
 
 func TestTemplateFunctions_Bhexa(t *testing.T) {
-	theme := &config.Theme{
+	theme := &Theme{
 		Theme: map[string]color.Color{
 			"background": {R: 25, G: 23, B: 36},
 		},
@@ -139,7 +138,7 @@ func TestTemplateFunctions_Bhexa(t *testing.T) {
 }
 
 func TestTemplateFunctions_RGB(t *testing.T) {
-	theme := &config.Theme{
+	theme := &Theme{
 		Theme: map[string]color.Color{
 			"background": {R: 25, G: 23, B: 36},
 		},
@@ -176,7 +175,7 @@ func TestTemplateFunctions_RGB(t *testing.T) {
 }
 
 func TestTemplateFunctions_RGBA(t *testing.T) {
-	theme := &config.Theme{
+	theme := &Theme{
 		Theme: map[string]color.Color{
 			"background": {R: 25, G: 23, B: 36},
 		},
@@ -202,8 +201,8 @@ func TestTemplateFunctions_RGBA(t *testing.T) {
 }
 
 func TestTemplateFunctions_Style(t *testing.T) {
-	theme := &config.Theme{
-		Syntax: color.ColorTree{
+	theme := &Theme{
+		Syntax: color.Tree{
 			"keyword": color.Style{
 				Color: color.Color{R: 49, G: 116, B: 143},
 				Bold:  true,

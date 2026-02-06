@@ -19,11 +19,11 @@ type Style struct {
 	Underline bool
 }
 
-// ColorTree represents a nested map of colors, used for syntax scopes.
-// Values are either Style or ColorTree.
-type ColorTree map[string]any
+// Tree represents a nested map of colors, used for syntax scopes.
+// Values are either Style or Tree.
+type Tree map[string]any
 
-// IsStyle returns true if the value is a Style (leaf node), false if it's a ColorTree.
+// IsStyle returns true if the value is a Style (leaf node), false if it's a Tree.
 func IsStyle(v any) bool {
 	_, ok := v.(Style)
 	return ok

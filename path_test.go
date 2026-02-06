@@ -1,4 +1,4 @@
-package engine
+package paletteswap
 
 import (
 	"testing"
@@ -8,9 +8,9 @@ import (
 
 func TestResolveColorPath_Palette(t *testing.T) {
 	data := templateData{
-		Palette: color.ColorTree{
+		Palette: color.Tree{
 			"base": color.Style{Color: color.Color{R: 25, G: 23, B: 36}},
-			"highlight": color.ColorTree{
+			"highlight": color.Tree{
 				"low": color.Style{Color: color.Color{R: 33, G: 32, B: 46}},
 			},
 		},
@@ -86,7 +86,7 @@ func TestResolveColorPath_ANSI(t *testing.T) {
 
 func TestResolveColorPath_Syntax(t *testing.T) {
 	data := templateData{
-		Syntax: color.ColorTree{
+		Syntax: color.Tree{
 			"keyword": color.Style{Color: color.Color{R: 49, G: 116, B: 143}},
 		},
 	}

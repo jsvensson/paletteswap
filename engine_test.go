@@ -1,4 +1,4 @@
-package engine
+package paletteswap
 
 import (
 	"os"
@@ -7,24 +7,23 @@ import (
 	"testing"
 
 	"github.com/jsvensson/paletteswap/internal/color"
-	"github.com/jsvensson/paletteswap/internal/config"
 )
 
-func testTheme() *config.Theme {
-	return &config.Theme{
-		Meta: config.Meta{
+func testTheme() *Theme {
+	return &Theme{
+		Meta: Meta{
 			Name:       "Test Theme",
 			Author:     "Tester",
 			Appearance: "dark",
 		},
-		Palette: color.ColorTree{
+		Palette: color.Tree{
 			"base": color.Style{Color: color.Color{R: 25, G: 23, B: 36}},
 			"love": color.Style{Color: color.Color{R: 235, G: 111, B: 146}},
-			"highlight": color.ColorTree{
+			"highlight": color.Tree{
 				"low":  color.Style{Color: color.Color{R: 33, G: 32, B: 46}},
 				"high": color.Style{Color: color.Color{R: 82, G: 79, B: 103}},
 			},
-			"custom": color.ColorTree{
+			"custom": color.Tree{
 				"bold": color.Style{
 					Color: color.Color{R: 255, G: 0, B: 0},
 					Bold:  true,
@@ -35,13 +34,13 @@ func testTheme() *config.Theme {
 			"background": {R: 25, G: 23, B: 36},
 			"cursor":     {R: 235, G: 111, B: 146},
 		},
-		Syntax: color.ColorTree{
+		Syntax: color.Tree{
 			"keyword": color.Style{Color: color.Color{R: 49, G: 116, B: 143}},
 			"comment": color.Style{
 				Color:  color.Color{R: 110, G: 106, B: 134},
 				Italic: true,
 			},
-			"markup": color.ColorTree{
+			"markup": color.Tree{
 				"heading": color.Style{Color: color.Color{R: 235, G: 111, B: 146}},
 				"bold": color.Style{
 					Color: color.Color{R: 246, G: 193, B: 119},

@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jsvensson/paletteswap/internal/config"
-	"github.com/jsvensson/paletteswap/internal/engine"
+	"github.com/jsvensson/paletteswap"
 	"github.com/spf13/cobra"
 )
 
@@ -36,12 +35,12 @@ func init() {
 }
 
 func runGenerate(cmd *cobra.Command, args []string) error {
-	theme, err := config.Load(flagTheme)
+	theme, err := paletteswap.Load(flagTheme)
 	if err != nil {
 		return fmt.Errorf("loading theme: %w", err)
 	}
 
-	e := &engine.Engine{
+	e := &paletteswap.Engine{
 		TemplatesDir: flagTemplates,
 		OutputDir:    flagOut,
 		Apps:         flagApp,

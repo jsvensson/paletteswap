@@ -1,4 +1,4 @@
-package config
+package parser
 
 import (
 	"fmt"
@@ -22,11 +22,11 @@ var requiredANSIColors = []string{
 	"bright_blue", "bright_magenta", "bright_cyan", "bright_white",
 }
 
-// Theme is the fully-resolved theme data, ready for template rendering.
-type Theme struct {
+// ParseResult holds the raw parsed theme data.
+type ParseResult struct {
 	Meta    Meta
-	Palette color.ColorTree
-	Syntax  color.ColorTree
+	Palette color.Tree
+	Syntax  color.Tree
 	Theme   map[string]color.Color
 	ANSI    map[string]color.Color
 }
@@ -67,7 +67,7 @@ type ResolvedConfig struct {
 type Loader struct {
 	body    hcl.Body
 	ctx     *hcl.EvalContext
-	palette color.ColorTree
+	palette color.Tree
 }
 
 // NewLoader parses an HCL file and builds the evaluation context from palette.
@@ -98,7 +98,7 @@ func NewLoader(path string) (*Loader, error) {
 		return nil, fmt.Errorf("palette block is not an hclsyntax.Body")
 	}
 
-	palette := make(color.ColorTree)
+	palette := make(color.Tree)
 	if err := parsePaletteBody(paletteBody, nil, palette); err != nil {
 		return nil, fmt.Errorf("parsing palette: %w", err)
 	}
@@ -120,7 +120,7 @@ func (l *Loader) Decode(target any) error {
 }
 
 // Palette returns the parsed palette colors.
-func (l *Loader) Palette() color.ColorTree {
+func (l *Loader) Palette() color.Tree {
 	return l.palette
 }
 
@@ -186,8 +186,8 @@ func validateANSI(ansi map[string]color.Color) error {
 	return nil
 }
 
-// Load parses an HCL theme file and returns a fully-resolved Theme.
-func Load(path string) (*Theme, error) {
+// Parse parses an HCL theme file and returns a fully-resolved ParseResult.
+func Parse(path string) (*ParseResult, error) {
 	loader, err := NewLoader(path)
 	if err != nil {
 		return nil, err
@@ -239,7 +239,7 @@ func Load(path string) (*Theme, error) {
 		meta = *resolved.Meta
 	}
 
-	return &Theme{
+	return &ParseResult{
 		Meta:    meta,
 		Palette: loader.Palette(),
 		Theme:   themeColors,
@@ -248,8 +248,8 @@ func Load(path string) (*Theme, error) {
 	}, nil
 }
 
-// colorTreeToCty converts a ColorTree to a cty.Value for HCL evaluation context.
-func colorTreeToCty(tree color.ColorTree) cty.Value {
+// colorTreeToCty converts a color.Tree to a cty.Value for HCL evaluation context.
+func colorTreeToCty(tree color.Tree) cty.Value {
 	vals := make(map[string]cty.Value, len(tree))
 
 	// Sort keys for deterministic output
@@ -263,7 +263,7 @@ func colorTreeToCty(tree color.ColorTree) cty.Value {
 		v := tree[k]
 		if style, ok := v.(color.Style); ok {
 			vals[k] = cty.StringVal(style.Color.Hex())
-		} else if subtree, ok := v.(color.ColorTree); ok {
+		} else if subtree, ok := v.(color.Tree); ok {
 			vals[k] = colorTreeToCty(subtree)
 		}
 	}
@@ -302,7 +302,7 @@ func makeBrightenFunc() function.Function {
 	})
 }
 
-func buildEvalContext(palette color.ColorTree) *hcl.EvalContext {
+func buildEvalContext(palette color.Tree) *hcl.EvalContext {
 	return &hcl.EvalContext{
 		Variables: map[string]cty.Value{
 			"palette": colorTreeToCty(palette),
@@ -318,7 +318,7 @@ func buildEvalContext(palette color.ColorTree) *hcl.EvalContext {
 // - Style blocks: key { color = "#hex", bold = true }
 // - Nested blocks: key { sub = ... }
 // Palette is parsed without context (no palette references allowed within palette).
-func parsePaletteBody(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.ColorTree) error {
+func parsePaletteBody(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.Tree) error {
 	// Parse attributes at this level (direct color assignments)
 	attrs, diags := body.JustAttributes()
 	if diags.HasErrors() {
@@ -357,7 +357,7 @@ func parsePaletteBody(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.Col
 			}
 			dest[block.Type] = style
 		} else {
-			subtree := make(color.ColorTree)
+			subtree := make(color.Tree)
 			dest[block.Type] = subtree
 			if err := parsePaletteBody(block.Body, ctx, subtree); err != nil {
 				return err
@@ -370,9 +370,9 @@ func parsePaletteBody(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.Col
 
 // parseSyntax extracts and parses the syntax block from an hcl.Body.
 // It handles the mixed structure (flat attributes + nested style blocks).
-func parseSyntax(body hcl.Body, ctx *hcl.EvalContext) (color.ColorTree, error) {
+func parseSyntax(body hcl.Body, ctx *hcl.EvalContext) (color.Tree, error) {
 	if body == nil {
-		return make(color.ColorTree), nil
+		return make(color.Tree), nil
 	}
 
 	// The remain body contains unparsed blocks including syntax.
@@ -380,13 +380,13 @@ func parseSyntax(body hcl.Body, ctx *hcl.EvalContext) (color.ColorTree, error) {
 	syntaxBody, ok := body.(*hclsyntax.Body)
 	if !ok {
 		// If not hclsyntax.Body, return empty tree (no syntax block)
-		return make(color.ColorTree), nil
+		return make(color.Tree), nil
 	}
 
 	// Find the syntax block
 	for _, block := range syntaxBody.Blocks {
 		if block.Type == "syntax" {
-			dest := make(color.ColorTree)
+			dest := make(color.Tree)
 			if err := parseSyntaxBody(block.Body, ctx, dest); err != nil {
 				return nil, err
 			}
@@ -394,10 +394,10 @@ func parseSyntax(body hcl.Body, ctx *hcl.EvalContext) (color.ColorTree, error) {
 		}
 	}
 
-	return make(color.ColorTree), nil
+	return make(color.Tree), nil
 }
 
-func parseSyntaxBody(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.ColorTree) error {
+func parseSyntaxBody(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.Tree) error {
 	// Parse attributes at this level
 	attrs, diags := body.JustAttributes()
 	if diags.HasErrors() {
@@ -436,7 +436,7 @@ func parseSyntaxBody(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.Colo
 			}
 			dest[block.Type] = style
 		} else {
-			subtree := make(color.ColorTree)
+			subtree := make(color.Tree)
 			dest[block.Type] = subtree
 			if err := parseSyntaxBody(block.Body, ctx, subtree); err != nil {
 				return err

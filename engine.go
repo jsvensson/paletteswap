@@ -1,4 +1,4 @@
-package engine
+package paletteswap
 
 import (
 	"fmt"
@@ -9,7 +9,6 @@ import (
 	"text/template"
 
 	"github.com/jsvensson/paletteswap/internal/color"
-	"github.com/jsvensson/paletteswap/internal/config"
 )
 
 // Engine loads and executes Go templates against a resolved Theme.
@@ -21,7 +20,7 @@ type Engine struct {
 
 // Run loads all .tmpl files from the templates directory, executes them
 // with the given theme data, and writes output files.
-func (e *Engine) Run(theme *config.Theme) error {
+func (e *Engine) Run(theme *Theme) error {
 	pattern := filepath.Join(e.TemplatesDir, "*.tmpl")
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
@@ -83,10 +82,10 @@ func (e *Engine) renderTemplate(tmplPath, outputName string, data templateData) 
 
 // templateData is the data passed to templates.
 type templateData struct {
-	Meta    config.Meta
-	Palette color.ColorTree
+	Meta    Meta
+	Palette color.Tree
 	Theme   map[string]color.Color
-	Syntax  color.ColorTree
+	Syntax  color.Tree
 	ANSI    map[string]color.Color
 	FuncMap template.FuncMap
 }
@@ -142,8 +141,8 @@ func resolveColorPath(path string, data templateData) (color.Color, error) {
 	}
 }
 
-// getStyleFromTree traverses a ColorTree using path segments and returns the Style.
-func getStyleFromTree(tree color.ColorTree, path []string) color.Style {
+// getStyleFromTree traverses a Tree using path segments and returns the Style.
+func getStyleFromTree(tree color.Tree, path []string) color.Style {
 	if len(path) == 0 {
 		return color.Style{}
 	}
@@ -163,8 +162,8 @@ func getStyleFromTree(tree color.ColorTree, path []string) color.Style {
 			return color.Style{}
 		}
 
-		// Intermediate parts should be ColorTrees
-		if subtree, ok := val.(color.ColorTree); ok {
+		// Intermediate parts should be Trees
+		if subtree, ok := val.(color.Tree); ok {
 			current = subtree
 		} else {
 			return color.Style{}
@@ -174,7 +173,7 @@ func getStyleFromTree(tree color.ColorTree, path []string) color.Style {
 	return color.Style{}
 }
 
-func buildTemplateData(theme *config.Theme) templateData {
+func buildTemplateData(theme *Theme) templateData {
 	data := templateData{
 		Meta:    theme.Meta,
 		Palette: theme.Palette,
