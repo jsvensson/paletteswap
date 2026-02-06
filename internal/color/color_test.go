@@ -111,6 +111,55 @@ func TestBrighten(t *testing.T) {
 	}
 }
 
+func TestDarken(t *testing.T) {
+	tests := []struct {
+		name       string
+		color      Color
+		percentage float64
+		want       Color
+	}{
+		{
+			name:       "darken red by 10%",
+			color:      Color{255, 0, 0},
+			percentage: 0.1,
+			want:       Color{204, 0, 0},
+		},
+		{
+			name:       "darken gray by 20%",
+			color:      Color{128, 128, 128},
+			percentage: 0.2,
+			want:       Color{77, 77, 77},
+		},
+		{
+			name:       "darken blue by 10%",
+			color:      Color{0, 0, 255},
+			percentage: 0.1,
+			want:       Color{0, 0, 204},
+		},
+		{
+			name:       "black stays black",
+			color:      Color{0, 0, 0},
+			percentage: 0.5,
+			want:       Color{0, 0, 0},
+		},
+		{
+			name:       "darken white by 50%",
+			color:      Color{255, 255, 255},
+			percentage: 0.5,
+			want:       Color{127, 127, 127},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Darken(tt.color, tt.percentage)
+			if got != tt.want {
+				t.Errorf("Darken(%v, %v) = %v, want %v", tt.color, tt.percentage, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestColor_RGBA(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -40,8 +40,9 @@ func Brighten(color Color, percentage float64) Color {
 
 	}
 
-	// Increase lightness
+	// Increase lightness, clamp at 0.0/1.0
 	l = math.Min(1.0, l+(percentage))
+	l = math.Max(0.0, l)
 
 	// Convert back to RGB
 	var r1, g1, b1 float64
@@ -67,6 +68,11 @@ func Brighten(color Color, percentage float64) Color {
 		G: uint8(g1 * 255),
 		B: uint8(b1 * 255),
 	}
+}
+
+// Darken returns a darker version of the given color.
+func Darken(color Color, percentage float64) Color {
+	return Brighten(color, percentage*-1)
 }
 
 func hueToRGB(p, q, t float64) float64 {
