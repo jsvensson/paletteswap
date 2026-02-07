@@ -123,12 +123,15 @@ func TestLoadPalette(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse() error: %v", err)
 	}
-	if len(theme.Palette) != 6 {
-		t.Errorf("len(Palette) = %d, want 6", len(theme.Palette))
+	if len(theme.Palette.Children) != 6 {
+		t.Errorf("len(Palette.Children) = %d, want 6", len(theme.Palette.Children))
 	}
-	love := theme.Palette["love"].(color.Style)
-	if love.Color.Hex() != "#eb6f92" {
-		t.Errorf("Palette[love].Color.Hex() = %q, want %q", love.Color.Hex(), "#eb6f92")
+	love, err := theme.Palette.Lookup([]string{"love"})
+	if err != nil {
+		t.Fatalf("Lookup(love) error: %v", err)
+	}
+	if love.Hex() != "#eb6f92" {
+		t.Errorf("Palette[love].Hex() = %q, want %q", love.Hex(), "#eb6f92")
 	}
 }
 
@@ -407,13 +410,6 @@ palette {
     mid  = "#403d52"
     high = "#524f67"
   }
-
-  custom {
-    bold {
-      color = "#ff0000"
-      bold  = true
-    }
-  }
 }
 
 theme {
@@ -428,36 +424,28 @@ theme {
 	}
 
 	// Check direct color
-	base := theme.Palette["base"].(color.Style)
-	if base.Color.Hex() != "#191724" {
-		t.Errorf("Palette[base].Color.Hex() = %q, want %q", base.Color.Hex(), "#191724")
+	base, err := theme.Palette.Lookup([]string{"base"})
+	if err != nil {
+		t.Fatalf("Lookup(base) error: %v", err)
+	}
+	if base.Hex() != "#191724" {
+		t.Errorf("Palette[base].Hex() = %q, want %q", base.Hex(), "#191724")
 	}
 
-	// Check nested color
-	highlight, ok := theme.Palette["highlight"].(color.Tree)
-	if !ok {
-		t.Fatal("Palette[highlight] is not a Tree")
+	// Check nested colors
+	low, err := theme.Palette.Lookup([]string{"highlight", "low"})
+	if err != nil {
+		t.Fatalf("Lookup(highlight.low) error: %v", err)
 	}
-	low := highlight["low"].(color.Style)
-	if low.Color.Hex() != "#21202e" {
-		t.Errorf("Palette[highlight][low].Color.Hex() = %q, want %q", low.Color.Hex(), "#21202e")
+	if low.Hex() != "#21202e" {
+		t.Errorf("Palette[highlight][low].Hex() = %q, want %q", low.Hex(), "#21202e")
 	}
-	high := highlight["high"].(color.Style)
-	if high.Color.Hex() != "#524f67" {
-		t.Errorf("Palette[highlight][high].Color.Hex() = %q, want %q", high.Color.Hex(), "#524f67")
+	high, err := theme.Palette.Lookup([]string{"highlight", "high"})
+	if err != nil {
+		t.Fatalf("Lookup(highlight.high) error: %v", err)
 	}
-
-	// Check nested style block
-	custom, ok := theme.Palette["custom"].(color.Tree)
-	if !ok {
-		t.Fatal("Palette[custom] is not a Tree")
-	}
-	bold := custom["bold"].(color.Style)
-	if bold.Color.Hex() != "#ff0000" {
-		t.Errorf("Palette[custom][bold].Color.Hex() = %q, want %q", bold.Color.Hex(), "#ff0000")
-	}
-	if !bold.Bold {
-		t.Error("Palette[custom][bold].Bold should be true")
+	if high.Hex() != "#524f67" {
+		t.Errorf("Palette[highlight][high].Hex() = %q, want %q", high.Hex(), "#524f67")
 	}
 
 	// Check theme can reference nested palette values
@@ -753,5 +741,148 @@ func TestResolveColor_ObjectWithoutColor(t *testing.T) {
 	_, err := resolveColor(val)
 	if err == nil {
 		t.Fatal("expected error for object without color key")
+	}
+}
+
+func TestPaletteNestedColor(t *testing.T) {
+	hcl := `
+palette {
+  gray = "#c0c0c0"
+
+  highlight {
+    color = palette.gray
+    low   = "#21202e"
+    high  = "#524f67"
+  }
+}
+
+theme {
+  background = palette.highlight
+  surface    = palette.highlight.low
+}
+` + completeANSI
+	path := writeTempHCL(t, hcl)
+	theme, err := Parse(path)
+	if err != nil {
+		t.Fatalf("Parse() error: %v", err)
+	}
+
+	highlightColor, err := theme.Palette.Lookup([]string{"highlight"})
+	if err != nil {
+		t.Fatalf("Lookup(highlight) error: %v", err)
+	}
+	if highlightColor.Hex() != "#c0c0c0" {
+		t.Errorf("palette.highlight = %q, want %q", highlightColor.Hex(), "#c0c0c0")
+	}
+
+	lowColor, err := theme.Palette.Lookup([]string{"highlight", "low"})
+	if err != nil {
+		t.Fatalf("Lookup(highlight.low) error: %v", err)
+	}
+	if lowColor.Hex() != "#21202e" {
+		t.Errorf("palette.highlight.low = %q, want %q", lowColor.Hex(), "#21202e")
+	}
+
+	bg := theme.Theme["background"]
+	if bg.Hex() != "#c0c0c0" {
+		t.Errorf("Theme[background] = %q, want %q", bg.Hex(), "#c0c0c0")
+	}
+
+	surface := theme.Theme["surface"]
+	if surface.Hex() != "#21202e" {
+		t.Errorf("Theme[surface] = %q, want %q", surface.Hex(), "#21202e")
+	}
+}
+
+func TestPaletteDeepNesting(t *testing.T) {
+	hcl := `
+palette {
+  highlight {
+    color = "#c0c0c0"
+    deep {
+      color = "#100f1a"
+      muted = "#0a0a10"
+    }
+  }
+}
+
+theme {
+  a = palette.highlight
+  b = palette.highlight.deep
+  c = palette.highlight.deep.muted
+}
+` + completeANSI
+	path := writeTempHCL(t, hcl)
+	theme, err := Parse(path)
+	if err != nil {
+		t.Fatalf("Parse() error: %v", err)
+	}
+
+	if theme.Theme["a"].Hex() != "#c0c0c0" {
+		t.Errorf("a = %q, want %q", theme.Theme["a"].Hex(), "#c0c0c0")
+	}
+	if theme.Theme["b"].Hex() != "#100f1a" {
+		t.Errorf("b = %q, want %q", theme.Theme["b"].Hex(), "#100f1a")
+	}
+	if theme.Theme["c"].Hex() != "#0a0a10" {
+		t.Errorf("c = %q, want %q", theme.Theme["c"].Hex(), "#0a0a10")
+	}
+}
+
+func TestPaletteNamespaceOnlyError(t *testing.T) {
+	hcl := `
+palette {
+  highlight {
+    low = "#21202e"
+  }
+}
+
+theme {
+  background = palette.highlight
+}
+` + completeANSI
+	path := writeTempHCL(t, hcl)
+	_, err := Parse(path)
+	if err == nil {
+		t.Fatal("expected error when referencing namespace-only block as color")
+	}
+}
+
+func TestPaletteSelfReference(t *testing.T) {
+	hcl := `
+palette {
+  base = "#191724"
+  surface = palette.base
+}
+
+theme {
+  background = palette.surface
+}
+` + completeANSI
+	path := writeTempHCL(t, hcl)
+	theme, err := Parse(path)
+	if err != nil {
+		t.Fatalf("Parse() error: %v", err)
+	}
+	if theme.Theme["background"].Hex() != "#191724" {
+		t.Errorf("background = %q, want %q", theme.Theme["background"].Hex(), "#191724")
+	}
+}
+
+func TestPaletteForwardReferenceError(t *testing.T) {
+	hcl := `
+palette {
+  surface = palette.base
+  base    = "#191724"
+}
+
+theme {
+  background = palette.surface
+}
+` + completeANSI
+	path := writeTempHCL(t, hcl)
+	_, err := Parse(path)
+	if err == nil {
+		t.Fatal("expected error for forward reference in palette")
 	}
 }
