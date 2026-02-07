@@ -268,6 +268,20 @@ func buildTemplateData(theme *Theme) templateData {
 				return "", fmt.Errorf("rgba: unsupported type %T", arg)
 			}
 		},
+		"meta": func(key string) (string, error) {
+			switch key {
+			case "name":
+				return data.Meta.Name, nil
+			case "author":
+				return data.Meta.Author, nil
+			case "appearance":
+				return data.Meta.Appearance, nil
+			case "url":
+				return data.Meta.URL, nil
+			default:
+				return "", fmt.Errorf("meta: unknown key %q (valid: name, author, appearance, url)", key)
+			}
+		},
 		"style": func(path string) (color.Style, error) {
 			parts := strings.Split(path, ".")
 			if len(parts) < 2 {
