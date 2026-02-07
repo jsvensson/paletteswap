@@ -23,12 +23,6 @@ type Style struct {
 // Values are either Style or Tree.
 type Tree map[string]any
 
-// IsStyle returns true if the value is a Style (leaf node), false if it's a Tree.
-func IsStyle(v any) bool {
-	_, ok := v.(Style)
-	return ok
-}
-
 // ParseHex parses a hex color string like "#eb6f92" into a Color.
 func ParseHex(s string) (Color, error) {
 	s = strings.TrimPrefix(s, "#")
