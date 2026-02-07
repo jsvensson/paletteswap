@@ -29,13 +29,18 @@ func NewServer(version string) *Server {
 	}
 
 	s.handler = protocol.Handler{
-		Initialize:            s.initialize,
-		Initialized:           s.initialized,
-		Shutdown:              s.shutdown,
-		SetTrace:              s.setTrace,
-		TextDocumentDidOpen:   s.textDocumentDidOpen,
-		TextDocumentDidChange: s.textDocumentDidChange,
-		TextDocumentDidClose:  s.textDocumentDidClose,
+		Initialize:                    s.initialize,
+		Initialized:                   s.initialized,
+		Shutdown:                      s.shutdown,
+		SetTrace:                      s.setTrace,
+		TextDocumentDidOpen:           s.textDocumentDidOpen,
+		TextDocumentDidChange:         s.textDocumentDidChange,
+		TextDocumentDidClose:          s.textDocumentDidClose,
+		TextDocumentHover:             s.textDocumentHover,
+		TextDocumentDefinition:        s.textDocumentDefinition,
+		TextDocumentCompletion:        s.textDocumentCompletion,
+		TextDocumentColor:             s.textDocumentDocumentColor,
+		TextDocumentColorPresentation: s.textDocumentColorPresentation,
 	}
 
 	return s
@@ -55,6 +60,10 @@ func (s *Server) initialize(_ *glsp.Context, params *protocol.InitializeParams) 
 		OpenClose: &protocol.True,
 		Change:    &syncKind,
 	}
+	capabilities.CompletionProvider = &protocol.CompletionOptions{
+		TriggerCharacters: []string{"."},
+	}
+	capabilities.ColorProvider = true
 
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
