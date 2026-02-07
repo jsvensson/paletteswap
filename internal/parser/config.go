@@ -269,29 +269,6 @@ func resolveColor(val cty.Value) (string, error) {
 	return "", fmt.Errorf("expected string or object with color attribute, got %s", val.Type().FriendlyName())
 }
 
-// colorTreeToCty converts a color.Tree to a cty.Value for HCL evaluation context.
-func colorTreeToCty(tree color.Tree) cty.Value {
-	vals := make(map[string]cty.Value, len(tree))
-
-	// Sort keys for deterministic output
-	keys := make([]string, 0, len(tree))
-	for k := range tree {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		v := tree[k]
-		if style, ok := v.(color.Style); ok {
-			vals[k] = cty.StringVal(style.Color.Hex())
-		} else if subtree, ok := v.(color.Tree); ok {
-			vals[k] = colorTreeToCty(subtree)
-		}
-	}
-
-	return cty.ObjectVal(vals)
-}
-
 // nodeToCty converts a color.Node to a cty.Value for HCL evaluation context.
 // Leaf nodes (no children) become cty.StringVal.
 // Nodes with children become cty.ObjectVal, with "color" as a sibling key if the node has its own color.
