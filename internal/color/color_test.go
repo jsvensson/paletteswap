@@ -221,6 +221,58 @@ func TestColor_HexAlpha(t *testing.T) {
 	}
 }
 
+func TestNode_Lookup(t *testing.T) {
+	// Build: palette { black = "#000000"; highlight { color = "#c0c0c0"; low = "#21202e" } }
+	black, _ := ParseHex("#000000")
+	gray, _ := ParseHex("#c0c0c0")
+	low, _ := ParseHex("#21202e")
+
+	root := &Node{
+		Children: map[string]*Node{
+			"black": {Color: &black},
+			"highlight": {
+				Color: &gray,
+				Children: map[string]*Node{
+					"low": {Color: &low},
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name    string
+		path    []string
+		want    string
+		wantErr bool
+	}{
+		{"flat leaf", []string{"black"}, "#000000", false},
+		{"nested block with color", []string{"highlight"}, "#c0c0c0", false},
+		{"nested child", []string{"highlight", "low"}, "#21202e", false},
+		{"not found", []string{"missing"}, "", true},
+		{"namespace only", []string{"nocolor"}, "", true},
+	}
+
+	// Add a namespace-only node for the error case
+	root.Children["nocolor"] = &Node{
+		Children: map[string]*Node{
+			"child": {Color: &black},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := root.Lookup(tt.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Lookup(%v) error = %v, wantErr %v", tt.path, err, tt.wantErr)
+				return
+			}
+			if err == nil && got.Hex() != tt.want {
+				t.Errorf("Lookup(%v) = %q, want %q", tt.path, got.Hex(), tt.want)
+			}
+		})
+	}
+}
+
 func TestColor_HexBareAlpha(t *testing.T) {
 	tests := []struct {
 		name     string
