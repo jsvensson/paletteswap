@@ -7,11 +7,17 @@ import (
 )
 
 func TestResolveColorPath_Palette(t *testing.T) {
+	base := color.Color{R: 25, G: 23, B: 36}
+	low := color.Color{R: 33, G: 32, B: 46}
 	data := templateData{
-		Palette: color.Tree{
-			"base": color.Style{Color: color.Color{R: 25, G: 23, B: 36}},
-			"highlight": color.Tree{
-				"low": color.Style{Color: color.Color{R: 33, G: 32, B: 46}},
+		Palette: &color.Node{
+			Children: map[string]*color.Node{
+				"base": {Color: &base},
+				"highlight": {
+					Children: map[string]*color.Node{
+						"low": {Color: &low},
+					},
+				},
 			},
 		},
 	}
