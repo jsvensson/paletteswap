@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/jsvensson/paletteswap/internal/color"
+	"github.com/zclconf/go-cty/cty"
 )
 
 const completeANSI = `
@@ -667,5 +668,40 @@ theme {
 	_, err := Parse(path)
 	if err == nil {
 		t.Fatal("expected error for invalid color in darken()")
+	}
+}
+
+func TestResolveColor_String(t *testing.T) {
+	val := cty.StringVal("#ff0000")
+	got, err := resolveColor(val)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "#ff0000" {
+		t.Errorf("got %q, want %q", got, "#ff0000")
+	}
+}
+
+func TestResolveColor_ObjectWithColor(t *testing.T) {
+	val := cty.ObjectVal(map[string]cty.Value{
+		"color": cty.StringVal("#c0c0c0"),
+		"low":   cty.StringVal("#21202e"),
+	})
+	got, err := resolveColor(val)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "#c0c0c0" {
+		t.Errorf("got %q, want %q", got, "#c0c0c0")
+	}
+}
+
+func TestResolveColor_ObjectWithoutColor(t *testing.T) {
+	val := cty.ObjectVal(map[string]cty.Value{
+		"low": cty.StringVal("#21202e"),
+	})
+	_, err := resolveColor(val)
+	if err == nil {
+		t.Fatal("expected error for object without color key")
 	}
 }

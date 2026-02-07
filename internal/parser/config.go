@@ -248,6 +248,25 @@ func Parse(path string) (*ParseResult, error) {
 	}, nil
 }
 
+// resolveColor extracts a color hex string from a cty.Value.
+// If the value is a string, return it directly.
+// If the value is an object, extract the "color" key.
+func resolveColor(val cty.Value) (string, error) {
+	if val.Type() == cty.String {
+		return val.AsString(), nil
+	}
+	if val.Type().IsObjectType() {
+		if val.Type().HasAttribute("color") {
+			colorVal := val.GetAttr("color")
+			if colorVal.Type() == cty.String {
+				return colorVal.AsString(), nil
+			}
+		}
+		return "", fmt.Errorf("object has no 'color' attribute; reference a specific child or add a color attribute")
+	}
+	return "", fmt.Errorf("expected string or object with color attribute, got %s", val.Type().FriendlyName())
+}
+
 // colorTreeToCty converts a color.Tree to a cty.Value for HCL evaluation context.
 func colorTreeToCty(tree color.Tree) cty.Value {
 	vals := make(map[string]cty.Value, len(tree))
