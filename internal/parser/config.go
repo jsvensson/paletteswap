@@ -290,6 +290,40 @@ func colorTreeToCty(tree color.Tree) cty.Value {
 	return cty.ObjectVal(vals)
 }
 
+// nodeToCty converts a color.Node to a cty.Value for HCL evaluation context.
+// Leaf nodes (no children) become cty.StringVal.
+// Nodes with children become cty.ObjectVal, with "color" as a sibling key if the node has its own color.
+func nodeToCty(node *color.Node) cty.Value {
+	if node.Children == nil {
+		// Leaf node: just a color string
+		if node.Color != nil {
+			return cty.StringVal(node.Color.Hex())
+		}
+		// Namespace-only leaf with no children — shouldn't happen, but handle gracefully
+		return cty.EmptyObjectVal
+	}
+
+	vals := make(map[string]cty.Value, len(node.Children)+1)
+
+	// Add the block's own color as "color" key
+	if node.Color != nil {
+		vals["color"] = cty.StringVal(node.Color.Hex())
+	}
+
+	// Add children
+	keys := make([]string, 0, len(node.Children))
+	for k := range node.Children {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		vals[k] = nodeToCty(node.Children[k])
+	}
+
+	return cty.ObjectVal(vals)
+}
+
 // makeBrightenFunc creates an HCL function that brightens a color.
 // Usage: brighten("#hex", 0.1) or brighten(palette.color, 0.1)
 func makeBrightenFunc() function.Function {
