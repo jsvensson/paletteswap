@@ -25,7 +25,7 @@ var requiredANSIColors = []string{
 // ParseResult holds the raw parsed theme data.
 type ParseResult struct {
 	Meta    Meta
-	Palette color.Tree
+	Palette *color.Node
 	Syntax  color.Tree
 	Theme   map[string]color.Color
 	ANSI    map[string]color.Color
@@ -67,7 +67,7 @@ type ResolvedConfig struct {
 type Loader struct {
 	body    hcl.Body
 	ctx     *hcl.EvalContext
-	palette color.Tree
+	palette *color.Node
 }
 
 // NewLoader parses an HCL file and builds the evaluation context from palette.
@@ -82,7 +82,6 @@ func NewLoader(path string) (*Loader, error) {
 		return nil, fmt.Errorf("parsing HCL: %s", diags.Error())
 	}
 
-	// First pass: extract palette (literal values, no context needed)
 	var raw RawConfig
 	if diags := gohcl.DecodeBody(file.Body, nil, &raw); diags.HasErrors() {
 		return nil, fmt.Errorf("decoding palette: %s", diags.Error())
@@ -92,14 +91,13 @@ func NewLoader(path string) (*Loader, error) {
 		return nil, fmt.Errorf("no palette block found")
 	}
 
-	// Parse nested palette structure (supports direct colors, style blocks, and nested scopes)
 	paletteBody, ok := raw.Palette.Entries.(*hclsyntax.Body)
 	if !ok {
 		return nil, fmt.Errorf("palette block is not an hclsyntax.Body")
 	}
 
-	palette := make(color.Tree)
-	if err := parsePaletteBody(paletteBody, nil, palette); err != nil {
+	palette := &color.Node{}
+	if err := parsePaletteBody(paletteBody, palette, palette); err != nil {
 		return nil, fmt.Errorf("parsing palette: %w", err)
 	}
 
@@ -120,7 +118,7 @@ func (l *Loader) Decode(target any) error {
 }
 
 // Palette returns the parsed palette colors.
-func (l *Loader) Palette() color.Tree {
+func (l *Loader) Palette() *color.Node {
 	return l.palette
 }
 
@@ -159,7 +157,11 @@ func decodeBodyToMap(body hcl.Body, ctx *hcl.EvalContext) (map[string]string, er
 		if diags.HasErrors() {
 			return nil, fmt.Errorf("evaluating %s: %s", name, diags.Error())
 		}
-		result[name] = val.AsString()
+		hexStr, err := resolveColor(val)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", name, err)
+		}
+		result[name] = hexStr
 	}
 	return result, nil
 }
@@ -386,10 +388,10 @@ func makeDarkenFunc() function.Function {
 	})
 }
 
-func buildEvalContext(palette color.Tree) *hcl.EvalContext {
+func buildEvalContext(palette *color.Node) *hcl.EvalContext {
 	return &hcl.EvalContext{
 		Variables: map[string]cty.Value{
-			"palette": colorTreeToCty(palette),
+			"palette": nodeToCty(palette),
 		},
 		Functions: map[string]function.Function{
 			"brighten": makeBrightenFunc(),
@@ -398,54 +400,70 @@ func buildEvalContext(palette color.Tree) *hcl.EvalContext {
 	}
 }
 
-// parsePaletteBody parses a palette block body with support for:
-// - Direct color attributes: key = "#hex"
-// - Style blocks: key { color = "#hex", bold = true }
-// - Nested blocks: key { sub = ... }
-// Palette is parsed without context (no palette references allowed within palette).
-func parsePaletteBody(body *hclsyntax.Body, ctx *hcl.EvalContext, dest color.Tree) error {
-	// Parse attributes at this level (direct color assignments)
-	attrs, diags := body.JustAttributes()
-	if diags.HasErrors() {
-		// JustAttributes fails if there are blocks; use manual iteration instead
-		for _, attr := range body.Attributes {
-			val, diags := attr.Expr.Value(ctx)
-			if diags.HasErrors() {
-				return fmt.Errorf("evaluating palette attribute %s: %s", attr.Name, diags.Error())
-			}
-			c, err := color.ParseHex(val.AsString())
-			if err != nil {
-				return fmt.Errorf("palette.%s: %w", attr.Name, err)
-			}
-			dest[attr.Name] = color.Style{Color: c}
-		}
-	} else {
-		for name, attr := range attrs {
-			val, diags := attr.Expr.Value(ctx)
-			if diags.HasErrors() {
-				return fmt.Errorf("evaluating palette.%s: %s", name, diags.Error())
-			}
-			c, err := color.ParseHex(val.AsString())
-			if err != nil {
-				return fmt.Errorf("palette.%s: %w", name, err)
-			}
-			dest[name] = color.Style{Color: c}
-		}
-	}
+// paletteItem represents an attribute or block in source order.
+type paletteItem struct {
+	pos   hcl.Pos
+	attr  *hclsyntax.Attribute // non-nil for attributes
+	block *hclsyntax.Block     // non-nil for blocks
+}
 
-	// Recurse into nested blocks
+// parsePaletteBody parses a palette block body into a *color.Node.
+// Items are processed in source order so later entries can reference earlier ones.
+func parsePaletteBody(body *hclsyntax.Body, paletteRoot *color.Node, node *color.Node) error {
+	// Collect all items and sort by source position
+	var items []paletteItem
+	for _, attr := range body.Attributes {
+		items = append(items, paletteItem{pos: attr.SrcRange.Start, attr: attr})
+	}
 	for _, block := range body.Blocks {
-		if isStyleBlock(block.Body) {
-			style, err := parseStyleBlock(block.Body, ctx)
-			if err != nil {
-				return fmt.Errorf("palette.%s: %w", block.Type, err)
+		items = append(items, paletteItem{pos: block.DefRange().Start, block: block})
+	}
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].pos.Line != items[j].pos.Line {
+			return items[i].pos.Line < items[j].pos.Line
+		}
+		return items[i].pos.Column < items[j].pos.Column
+	})
+
+	for _, item := range items {
+		// Rebuild eval context with current state of palette root
+		ctx := buildEvalContext(paletteRoot)
+
+		if item.attr != nil {
+			val, diags := item.attr.Expr.Value(ctx)
+			if diags.HasErrors() {
+				return fmt.Errorf("evaluating palette.%s: %s", item.attr.Name, diags.Error())
 			}
-			dest[block.Type] = style
+
+			hexStr, err := resolveColor(val)
+			if err != nil {
+				return fmt.Errorf("palette.%s: %w", item.attr.Name, err)
+			}
+
+			c, err := color.ParseHex(hexStr)
+			if err != nil {
+				return fmt.Errorf("palette.%s: %w", item.attr.Name, err)
+			}
+
+			if item.attr.Name == "color" {
+				// Reserved keyword: set this node's own color
+				node.Color = &c
+			} else {
+				// Child leaf node
+				if node.Children == nil {
+					node.Children = make(map[string]*color.Node)
+				}
+				node.Children[item.attr.Name] = &color.Node{Color: &c}
+			}
 		} else {
-			subtree := make(color.Tree)
-			dest[block.Type] = subtree
-			if err := parsePaletteBody(block.Body, ctx, subtree); err != nil {
-				return err
+			// Block: recurse
+			if node.Children == nil {
+				node.Children = make(map[string]*color.Node)
+			}
+			child := &color.Node{}
+			node.Children[item.block.Type] = child
+			if err := parsePaletteBody(item.block.Body, paletteRoot, child); err != nil {
+				return fmt.Errorf("palette.%s: %w", item.block.Type, err)
 			}
 		}
 	}
