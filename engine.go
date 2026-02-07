@@ -83,7 +83,7 @@ func (e *Engine) renderTemplate(tmplPath, outputName string, data templateData) 
 // templateData is the data passed to templates.
 type templateData struct {
 	Meta    Meta
-	Palette color.Tree
+	Palette *color.Node
 	Theme   map[string]color.Color
 	Syntax  color.Tree
 	ANSI    map[string]color.Color
@@ -103,11 +103,11 @@ func resolveColorPath(path string, data templateData) (color.Color, error) {
 
 	switch block {
 	case "palette":
-		style := getStyleFromTree(data.Palette, rest)
-		if style.Color == (color.Color{}) {
-			return color.Color{}, fmt.Errorf("palette path not found: %s", path)
+		c, err := data.Palette.Lookup(rest)
+		if err != nil {
+			return color.Color{}, fmt.Errorf("palette path not found: %s (%w)", path, err)
 		}
-		return style.Color, nil
+		return c, nil
 
 	case "theme":
 		if len(rest) != 1 {
@@ -278,12 +278,10 @@ func buildTemplateData(theme *Theme) templateData {
 			rest := parts[1:]
 
 			switch block {
-			case "palette":
-				return getStyleFromTree(data.Palette, rest), nil
 			case "syntax":
 				return getStyleFromTree(data.Syntax, rest), nil
 			default:
-				return color.Style{}, fmt.Errorf("style only supports palette/syntax blocks, got %q", block)
+				return color.Style{}, fmt.Errorf("style only supports syntax block, got %q", block)
 			}
 		},
 	}

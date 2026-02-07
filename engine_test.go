@@ -10,23 +10,32 @@ import (
 )
 
 func testTheme() *Theme {
+	base := color.Color{R: 25, G: 23, B: 36}
+	love := color.Color{R: 235, G: 111, B: 146}
+	highlightLow := color.Color{R: 33, G: 32, B: 46}
+	highlightHigh := color.Color{R: 82, G: 79, B: 103}
+	red := color.Color{R: 255, G: 0, B: 0}
+
 	return &Theme{
 		Meta: Meta{
 			Name:       "Test Theme",
 			Author:     "Tester",
 			Appearance: "dark",
 		},
-		Palette: color.Tree{
-			"base": color.Style{Color: color.Color{R: 25, G: 23, B: 36}},
-			"love": color.Style{Color: color.Color{R: 235, G: 111, B: 146}},
-			"highlight": color.Tree{
-				"low":  color.Style{Color: color.Color{R: 33, G: 32, B: 46}},
-				"high": color.Style{Color: color.Color{R: 82, G: 79, B: 103}},
-			},
-			"custom": color.Tree{
-				"bold": color.Style{
-					Color: color.Color{R: 255, G: 0, B: 0},
-					Bold:  true,
+		Palette: &color.Node{
+			Children: map[string]*color.Node{
+				"base": {Color: &base},
+				"love": {Color: &love},
+				"highlight": {
+					Children: map[string]*color.Node{
+						"low":  {Color: &highlightLow},
+						"high": {Color: &highlightHigh},
+					},
+				},
+				"custom": {
+					Children: map[string]*color.Node{
+						"bold": {Color: &red},
+					},
 				},
 			},
 		},
@@ -49,7 +58,7 @@ func testTheme() *Theme {
 			},
 		},
 		ANSI: map[string]color.Color{
-			"black": {R: 25, G: 23, B: 36},
+			"black": {R: 0, G: 0, B: 0},
 			"red":   {R: 235, G: 111, B: 146},
 		},
 	}
@@ -250,7 +259,7 @@ func TestRunPaletteFunc(t *testing.T) {
 
 func TestRunStyleFunc(t *testing.T) {
 	tmplDir := setupTemplateDir(t, map[string]string{
-		"test.txt.tmpl": `color={{ (style "palette.custom.bold").Color | hex }} bold={{ (style "palette.custom.bold").Bold }}`,
+		"test.txt.tmpl": `color={{ (style "syntax.comment").Color | hex }} italic={{ (style "syntax.comment").Italic }}`,
 	})
 	outDir := filepath.Join(t.TempDir(), "output")
 
@@ -268,7 +277,7 @@ func TestRunStyleFunc(t *testing.T) {
 		t.Fatalf("reading output: %v", err)
 	}
 
-	want := "color=#ff0000 bold=true"
+	want := "color=#6e6a86 italic=true"
 	if got := string(content); got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}

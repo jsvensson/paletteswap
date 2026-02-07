@@ -10,9 +10,12 @@ import (
 )
 
 func TestTemplateFunctions_Hex(t *testing.T) {
+	base := color.Color{R: 25, G: 23, B: 36}
 	theme := &Theme{
-		Palette: color.Tree{
-			"base": color.Style{Color: color.Color{R: 25, G: 23, B: 36}},
+		Palette: &color.Node{
+			Children: map[string]*color.Node{
+				"base": {Color: &base},
+			},
 		},
 		Theme: map[string]color.Color{
 			"background": {R: 25, G: 23, B: 36},

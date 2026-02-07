@@ -10,7 +10,7 @@ import (
 // Theme is the fully-resolved theme data, ready for template rendering.
 type Theme struct {
 	Meta    Meta
-	Palette color.Tree
+	Palette *color.Node
 	Syntax  color.Tree
 	Theme   map[string]color.Color
 	ANSI    map[string]color.Color
