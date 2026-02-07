@@ -23,6 +23,34 @@ type Style struct {
 // Values are either Style or Tree.
 type Tree map[string]any
 
+// Node represents a palette entry that can be both a color and a namespace.
+// Color is nil for namespace-only nodes (groups without a color attribute).
+// Children is nil for leaf nodes (flat color attributes).
+type Node struct {
+	Color    *Color
+	Children map[string]*Node
+}
+
+// Lookup resolves a dot-path (as segments) to a Color.
+// Returns an error if the path is not found or the target node has no color.
+func (n *Node) Lookup(path []string) (Color, error) {
+	current := n
+	for _, part := range path {
+		if current.Children == nil {
+			return Color{}, fmt.Errorf("path not found: %s is a leaf, cannot traverse further", part)
+		}
+		child, ok := current.Children[part]
+		if !ok {
+			return Color{}, fmt.Errorf("path not found: %q does not exist", part)
+		}
+		current = child
+	}
+	if current.Color == nil {
+		return Color{}, fmt.Errorf("path is a group, not a color; add a color attribute or reference a specific child")
+	}
+	return *current.Color, nil
+}
+
 // ParseHex parses a hex color string like "#eb6f92" into a Color.
 func ParseHex(s string) (Color, error) {
 	s = strings.TrimPrefix(s, "#")
