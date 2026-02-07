@@ -213,3 +213,7 @@ paletteswap generate --app ghostty --app zed
 # Custom paths
 paletteswap generate --theme mytheme.hcl --templates ./templates --out ./themes
 ```
+
+# Inspiration
+
+With ❤️ to [Rosé Pine](https://rosepinetheme.com/) and [Biscuit](https://github.com/Biscuit-Theme/biscuit), two great color themes.
