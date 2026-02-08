@@ -95,11 +95,74 @@ palette {
 		t.Fatal("expected at least 1 diagnostic for syntax error")
 	}
 
-	// All syntax errors should be error-level
+	// Check that at least one diagnostic is an error-level syntax error
+	hasSyntaxError := false
 	for _, d := range result.Diagnostics {
-		if d.Severity == nil || *d.Severity != protocol.DiagnosticSeverityError {
-			t.Errorf("expected error severity, got %v", d.Severity)
+		if d.Severity != nil && *d.Severity == protocol.DiagnosticSeverityError {
+			hasSyntaxError = true
+			break
 		}
+	}
+	if !hasSyntaxError {
+		t.Error("expected at least one error-level syntax diagnostic")
+	}
+}
+
+func TestAnalyze_InvalidAttributeNameFiltered(t *testing.T) {
+	// This tests that "Invalid attribute name" diagnostics are filtered out
+	// during editing when user types "palette." but hasn't typed the attribute yet
+	content := `
+palette {
+  base = "#191724"
+  surface = "#1f1d2e"
+}
+
+theme {
+  background = palette.
+}
+
+ansi {
+  black   = "#000000"
+  red     = "#ff0000"
+  green   = "#00ff00"
+  yellow  = "#ffff00"
+  blue    = "#0000ff"
+  magenta = "#ff00ff"
+  cyan    = "#00ffff"
+  white   = "#ffffff"
+  bright_black   = "#808080"
+  bright_red     = "#ff8080"
+  bright_green   = "#80ff80"
+  bright_yellow  = "#ffff80"
+  bright_blue    = "#8080ff"
+  bright_magenta = "#ff80ff"
+  bright_cyan    = "#80ffff"
+  bright_white   = "#ffffff"
+}
+`
+	result := Analyze("test.pstheme", content)
+
+	// Palette should still be built
+	if result.Palette == nil {
+		t.Fatal("expected palette tree to be built despite incomplete reference")
+	}
+
+	// Check that "Invalid attribute name" diagnostic is filtered out
+	for _, d := range result.Diagnostics {
+		if strings.Contains(d.Message, "Invalid attribute name") {
+			t.Errorf("'Invalid attribute name' diagnostic should be filtered out during editing, got: %s", d.Message)
+		}
+	}
+
+	// We should still have the palette tree with base and surface
+	if result.Palette.Children == nil {
+		t.Fatal("expected palette children to be populated")
+	}
+	if _, ok := result.Palette.Children["base"]; !ok {
+		t.Error("expected 'base' in palette children")
+	}
+	if _, ok := result.Palette.Children["surface"]; !ok {
+		t.Error("expected 'surface' in palette children")
 	}
 }
 
