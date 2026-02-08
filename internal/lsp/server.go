@@ -14,18 +14,20 @@ import (
 const serverName = "pstheme-lsp"
 
 type Server struct {
-	handler protocol.Handler
-	docs    *DocumentStore
-	version string
-	mu      sync.RWMutex
-	results map[string]*AnalysisResult
+	handler    protocol.Handler
+	docs       *DocumentStore
+	version    string
+	mu         sync.RWMutex
+	results    map[string]*AnalysisResult
+	docVersion map[string]int // Track document versions to prevent stale diagnostics
 }
 
 func NewServer(version string) *Server {
 	s := &Server{
-		docs:    NewDocumentStore(),
-		version: version,
-		results: make(map[string]*AnalysisResult),
+		docs:       NewDocumentStore(),
+		version:    version,
+		results:    make(map[string]*AnalysisResult),
+		docVersion: make(map[string]int),
 	}
 
 	s.handler = protocol.Handler{
@@ -91,18 +93,33 @@ func (s *Server) setTrace(_ *glsp.Context, params *protocol.SetTraceParams) erro
 func (s *Server) textDocumentDidOpen(ctx *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
 	uri := string(params.TextDocument.URI)
 	s.docs.Open(uri, params.TextDocument.Text)
-	s.analyzeAndPublish(ctx.Notify, uri)
+	s.mu.Lock()
+	s.docVersion[uri] = 0
+	s.mu.Unlock()
+	s.analyzeAndPublish(ctx.Notify, uri, 0)
 	return nil
 }
 
 func (s *Server) textDocumentDidChange(ctx *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
 	uri := string(params.TextDocument.URI)
+
+	// Increment document version for each change
+	s.mu.Lock()
+	s.docVersion[uri]++
+	version := s.docVersion[uri]
+	s.mu.Unlock()
+
 	for _, change := range params.ContentChanges {
-		if c, ok := change.(protocol.TextDocumentContentChangeEventWhole); ok {
+		switch c := change.(type) {
+		case protocol.TextDocumentContentChangeEventWhole:
+			s.docs.Update(uri, c.Text)
+		case *protocol.TextDocumentContentChangeEvent:
+			// Range-based changes should not occur with Full sync, but handle them just in case
+			// by updating with the new text (treating it as a full document update)
 			s.docs.Update(uri, c.Text)
 		}
 	}
-	s.analyzeAndPublish(ctx.Notify, uri)
+	s.analyzeAndPublish(ctx.Notify, uri, version)
 	return nil
 }
 
@@ -111,11 +128,12 @@ func (s *Server) textDocumentDidClose(_ *glsp.Context, params *protocol.DidClose
 	s.docs.Close(uri)
 	s.mu.Lock()
 	delete(s.results, uri)
+	delete(s.docVersion, uri)
 	s.mu.Unlock()
 	return nil
 }
 
-func (s *Server) analyzeAndPublish(notify glsp.NotifyFunc, uri string) {
+func (s *Server) analyzeAndPublish(notify glsp.NotifyFunc, uri string, version int) {
 	content, ok := s.docs.Get(uri)
 	if !ok {
 		return
@@ -125,12 +143,17 @@ func (s *Server) analyzeAndPublish(notify glsp.NotifyFunc, uri string) {
 
 	s.mu.Lock()
 	s.results[uri] = result
+	currentVersion := s.docVersion[uri]
 	s.mu.Unlock()
 
-	go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
-		URI:         protocol.DocumentUri(uri),
-		Diagnostics: result.Diagnostics,
-	})
+	// Only publish diagnostics if this is still the latest version
+	// This prevents stale diagnostics from being published when rapid changes occur
+	if version == currentVersion {
+		go notify(protocol.ServerTextDocumentPublishDiagnostics, protocol.PublishDiagnosticsParams{
+			URI:         protocol.DocumentUri(uri),
+			Diagnostics: result.Diagnostics,
+		})
+	}
 }
 
 func (s *Server) getResult(uri string) *AnalysisResult {

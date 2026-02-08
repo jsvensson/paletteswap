@@ -63,7 +63,8 @@ func hclRangeToLSP(r hcl.Range) protocol.Range {
 // and color locations. It collects ALL errors rather than short-circuiting on the first.
 func Analyze(filename, content string) *AnalysisResult {
 	result := &AnalysisResult{
-		Symbols: make(map[string]protocol.Range),
+		Symbols:     make(map[string]protocol.Range),
+		Diagnostics: []protocol.Diagnostic{}, // Initialize to empty slice, not nil
 	}
 
 	// Parse HCL from string content
