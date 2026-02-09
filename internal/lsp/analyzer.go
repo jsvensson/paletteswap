@@ -69,11 +69,16 @@ func Analyze(filename, content string) *AnalysisResult {
 
 	// Parse HCL from string content
 	file, diags := hclsyntax.ParseConfig([]byte(content), filename, hcl.Pos{Line: 1, Column: 1})
-	if diags.HasErrors() {
-		for _, d := range diags {
-			result.Diagnostics = append(result.Diagnostics, hclDiagToLSP(d))
+
+	// Convert HCL diagnostics, filtering out unhelpful ones during editing
+	for _, d := range diags {
+		if lspDiag := hclDiagToLSP(d); lspDiag != nil {
+			result.Diagnostics = append(result.Diagnostics, *lspDiag)
 		}
-		// Cannot proceed with semantic analysis if syntax is broken
+	}
+
+	// Only return early if we truly can't proceed (no file or body)
+	if file == nil || file.Body == nil {
 		return result
 	}
 
@@ -146,7 +151,14 @@ func Analyze(filename, content string) *AnalysisResult {
 }
 
 // hclDiagToLSP converts an HCL diagnostic to an LSP diagnostic.
-func hclDiagToLSP(d *hcl.Diagnostic) protocol.Diagnostic {
+// Returns nil if the diagnostic should be filtered out (e.g., unhelpful editing errors).
+func hclDiagToLSP(d *hcl.Diagnostic) *protocol.Diagnostic {
+	// Filter out "Invalid attribute name" errors during editing
+	// These occur when user types "palette." and hasn't typed the attribute yet
+	if d.Summary == "Invalid attribute name" && strings.Contains(d.Detail, "required after a dot") {
+		return nil
+	}
+
 	sev := DiagError
 	if d.Severity == hcl.DiagWarning {
 		sev = DiagWarning
@@ -166,7 +178,7 @@ func hclDiagToLSP(d *hcl.Diagnostic) protocol.Diagnostic {
 		diag.Range = hclRangeToLSP(*d.Subject)
 	}
 
-	return diag
+	return &diag
 }
 
 // addError adds an error-level diagnostic at the given range.
@@ -286,7 +298,13 @@ func (r *AnalysisResult) analyzeColorBlock(body *hclsyntax.Body, ctx *hcl.EvalCo
 	for _, attr := range body.Attributes {
 		val, diags := attr.Expr.Value(ctx)
 		if diags.HasErrors() {
-			r.addError(attr.SrcRange, fmt.Sprintf("%s.%s: %s", blockName, attr.Name, diags.Error()))
+			// Filter out "Invalid attribute name" errors during editing
+			// These occur when user types "palette." and hasn't typed the attribute yet
+			errStr := diags.Error()
+			if strings.Contains(errStr, "Invalid attribute name") {
+				continue
+			}
+			r.addError(attr.SrcRange, fmt.Sprintf("%s.%s: %s", blockName, attr.Name, errStr))
 			continue
 		}
 

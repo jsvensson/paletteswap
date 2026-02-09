@@ -550,3 +550,155 @@ func trimSpace(s string) string {
 	}
 	return s[start:end]
 }
+
+func TestCompletion_PaletteWithSyntaxError(t *testing.T) {
+	// This tests that palette completion works even when there are syntax errors
+	// elsewhere in the file (e.g., incomplete palette. reference in syntax block)
+	content := `
+palette {
+  base    = "#191724"
+  surface = "#1f1d2e"
+  love    = "#eb6f92"
+
+  highlight {
+    color = "#524f67"
+    low   = "#21202e"
+    high  = "#6e6a86"
+  }
+}
+
+syntax {
+  keyword = palette.
+}
+
+ansi {
+  black   = "#000000"
+  red     = "#ff0000"
+  green   = "#00ff00"
+  yellow  = "#ffff00"
+  blue    = "#0000ff"
+  magenta = "#ff00ff"
+  cyan    = "#00ffff"
+  white   = "#ffffff"
+  bright_black   = "#808080"
+  bright_red     = "#ff8080"
+  bright_green   = "#80ff80"
+  bright_yellow  = "#ffff80"
+  bright_blue    = "#8080ff"
+  bright_magenta = "#ff80ff"
+  bright_cyan    = "#80ffff"
+  bright_white   = "#ffffff"
+}
+`
+	result := Analyze("test.pstheme", content)
+
+	// Palette should be built even with syntax errors
+	if result.Palette == nil {
+		t.Fatal("expected palette tree to be built despite syntax errors")
+	}
+
+	// Find the line with "palette." in the syntax block
+	lines := splitLines(content)
+	var targetLine uint32
+	for i, line := range lines {
+		if strings.Contains(line, "keyword = palette.") {
+			targetLine = uint32(i)
+			break
+		}
+	}
+
+	pos := protocol.Position{
+		Line:      targetLine,
+		Character: uint32(len(lines[targetLine])),
+	}
+
+	items := complete(result, content, pos)
+
+	if len(items) == 0 {
+		t.Fatal("expected completion items for palette. even with syntax errors, got none")
+	}
+
+	// Should include top-level palette children
+	expectedLabels := []string{"base", "surface", "love", "highlight"}
+	for _, label := range expectedLabels {
+		if !hasLabel(items, label) {
+			t.Errorf("expected completion item %q, not found in results", label)
+		}
+	}
+}
+
+func TestCompletion_PaletteNestedWithSyntaxError(t *testing.T) {
+	// Test nested palette completion works even with incomplete references elsewhere
+	content := `
+palette {
+  base    = "#191724"
+
+  highlight {
+    color = "#524f67"
+    low   = "#21202e"
+    high  = "#6e6a86"
+  }
+}
+
+theme {
+  background = palette.
+}
+
+syntax {
+  comment = palette.highlight.
+}
+
+ansi {
+  black   = "#000000"
+  red     = "#ff0000"
+  green   = "#00ff00"
+  yellow  = "#ffff00"
+  blue    = "#0000ff"
+  magenta = "#ff00ff"
+  cyan    = "#00ffff"
+  white   = "#ffffff"
+  bright_black   = "#808080"
+  bright_red     = "#ff8080"
+  bright_green   = "#80ff80"
+  bright_yellow  = "#ffff80"
+  bright_blue    = "#8080ff"
+  bright_magenta = "#ff80ff"
+  bright_cyan    = "#80ffff"
+  bright_white   = "#ffffff"
+}
+`
+	result := Analyze("test.pstheme", content)
+
+	if result.Palette == nil {
+		t.Fatal("expected palette tree to be built despite syntax errors")
+	}
+
+	// Test nested completion: palette.highlight.
+	lines := splitLines(content)
+	var targetLine uint32
+	for i, line := range lines {
+		if strings.Contains(line, "comment = palette.highlight.") {
+			targetLine = uint32(i)
+			break
+		}
+	}
+
+	pos := protocol.Position{
+		Line:      targetLine,
+		Character: uint32(len(lines[targetLine])),
+	}
+
+	items := complete(result, content, pos)
+
+	if len(items) == 0 {
+		t.Fatal("expected completion items for palette.highlight., got none")
+	}
+
+	// Should include highlight children: low, high
+	if !hasLabel(items, "low") {
+		t.Error("expected completion item 'low' for palette.highlight.")
+	}
+	if !hasLabel(items, "high") {
+		t.Error("expected completion item 'high' for palette.highlight.")
+	}
+}
