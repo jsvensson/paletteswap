@@ -31,18 +31,19 @@ func NewServer(version string) *Server {
 	}
 
 	s.handler = protocol.Handler{
-		Initialize:                    s.initialize,
-		Initialized:                   s.initialized,
-		Shutdown:                      s.shutdown,
-		SetTrace:                      s.setTrace,
-		TextDocumentDidOpen:           s.textDocumentDidOpen,
-		TextDocumentDidChange:         s.textDocumentDidChange,
-		TextDocumentDidClose:          s.textDocumentDidClose,
-		TextDocumentHover:             s.textDocumentHover,
-		TextDocumentDefinition:        s.textDocumentDefinition,
-		TextDocumentCompletion:        s.textDocumentCompletion,
-		TextDocumentColor:             s.textDocumentDocumentColor,
-		TextDocumentColorPresentation: s.textDocumentColorPresentation,
+		Initialize:                     s.initialize,
+		Initialized:                    s.initialized,
+		Shutdown:                       s.shutdown,
+		SetTrace:                       s.setTrace,
+		TextDocumentDidOpen:            s.textDocumentDidOpen,
+		TextDocumentDidChange:          s.textDocumentDidChange,
+		TextDocumentDidClose:           s.textDocumentDidClose,
+		TextDocumentHover:              s.textDocumentHover,
+		TextDocumentDefinition:         s.textDocumentDefinition,
+		TextDocumentCompletion:         s.textDocumentCompletion,
+		TextDocumentColor:              s.textDocumentDocumentColor,
+		TextDocumentColorPresentation:  s.textDocumentColorPresentation,
+		TextDocumentSemanticTokensFull: s.textDocumentSemanticTokensFull,
 	}
 
 	return s
@@ -66,6 +67,15 @@ func (s *Server) initialize(_ *glsp.Context, params *protocol.InitializeParams) 
 		TriggerCharacters: []string{"."},
 	}
 	capabilities.ColorProvider = true
+	capabilities.SemanticTokensProvider = &protocol.SemanticTokensOptions{
+		Legend: protocol.SemanticTokensLegend{
+			TokenTypes:     semanticTokenTypes,
+			TokenModifiers: semanticTokenModifiers,
+		},
+		Full: protocol.SemanticDelta{
+			Delta: &protocol.False,
+		},
+	}
 
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
@@ -160,4 +170,16 @@ func (s *Server) getResult(uri string) *AnalysisResult {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.results[uri]
+}
+
+// textDocumentSemanticTokensFull handles textDocument/semanticTokens/full requests
+func (s *Server) textDocumentSemanticTokensFull(_ *glsp.Context, params *protocol.SemanticTokensParams) (*protocol.SemanticTokens, error) {
+	uri := string(params.TextDocument.URI)
+	content, ok := s.docs.Get(uri)
+	if !ok {
+		return &protocol.SemanticTokens{Data: []uint32{}}, nil
+	}
+
+	data := semanticTokensFull(content)
+	return &protocol.SemanticTokens{Data: data}, nil
 }
