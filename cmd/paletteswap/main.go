@@ -13,11 +13,13 @@ var (
 	flagOut       string
 	flagTemplates string
 	flagApp       []string
+	version       = "dev" // Injected at build time via ldflags
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "paletteswap",
-	Short: "Generate application-specific color themes from a single HCL source file",
+	Use:     "paletteswap",
+	Short:   "Generate application-specific color themes from a single HCL source file",
+	Version: version,
 }
 
 var generateCmd = &cobra.Command{
@@ -26,12 +28,21 @@ var generateCmd = &cobra.Command{
 	RunE:  runGenerate,
 }
 
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print the version number",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Fprintln(cmd.OutOrStdout(), version)
+	},
+}
+
 func init() {
 	generateCmd.Flags().StringVar(&flagTheme, "theme", "theme.hcl", "path to theme HCL file")
 	generateCmd.Flags().StringVar(&flagOut, "out", "output", "output directory")
 	generateCmd.Flags().StringVar(&flagTemplates, "templates", "templates", "templates directory")
 	generateCmd.Flags().StringArrayVar(&flagApp, "app", nil, "generate only for specific apps (can be repeated)")
 	rootCmd.AddCommand(generateCmd)
+	rootCmd.AddCommand(versionCmd)
 }
 
 func runGenerate(cmd *cobra.Command, args []string) error {
