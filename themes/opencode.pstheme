@@ -1,0 +1,93 @@
+meta {
+  name       = "OpenCode"
+  author     = "PaletteSwap"
+  appearance = "dark"
+  url        = "https://opencode.ai"
+}
+
+palette {
+  base    = "#211E1E"
+  surface = "#2A2626"
+  overlay = "#4B4646"
+  muted   = "#656363"
+  subtle  = "#B7B1B1"
+  text    = "#F1ECEC"
+  accent  = "#CFCECD"
+
+  highlight {
+    low  = "#2A2626"
+    mid  = "#4B4646"
+    high = "#656363"
+  }
+}
+
+theme {
+  background        = palette.base
+  foreground        = palette.text
+  cursor            = palette.accent
+  selection         = palette.highlight.mid
+  border            = palette.highlight.mid
+  active_border     = palette.muted
+  inactive_tab      = palette.surface
+  active_tab        = palette.overlay
+  url               = palette.subtle
+}
+
+syntax {
+  keyword    = palette.subtle
+  string     = palette.accent
+  variable   = palette.text
+  function   = palette.accent
+  type       = palette.subtle
+  constant   = palette.accent
+  operator   = palette.muted
+  number     = palette.accent
+  boolean    = palette.subtle
+  property   = palette.text
+  tag        = palette.accent
+  attribute  = palette.subtle
+
+  comment {
+    color  = palette.muted
+    italic = true
+  }
+
+  markup {
+    heading = palette.text
+    code    = palette.accent
+
+    bold {
+      color = palette.text
+      bold  = true
+    }
+
+    italic {
+      color  = palette.subtle
+      italic = true
+    }
+
+    link {
+      color     = palette.subtle
+      underline = true
+    }
+  }
+}
+
+ansi {
+  black          = palette.base
+  red            = "#C45B5B"
+  green          = "#7A9A6D"
+  yellow         = "#C4A46B"
+  blue           = "#6D8A9A"
+  magenta        = "#9A7A9A"
+  cyan           = "#7A9A9A"
+  white          = palette.subtle
+  bright_black   = palette.surface
+  bright_red     = "#D67B7B"
+  bright_green   = "#9ABA8D"
+  bright_yellow  = "#D4C48B"
+  bright_blue    = "#8DAABA"
+  bright_magenta = "#BA9ABA"
+  bright_cyan    = "#9ABABA"
+  bright_white   = palette.text
+}
