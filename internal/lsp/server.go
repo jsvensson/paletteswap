@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/tliron/glsp"
@@ -44,6 +45,7 @@ func NewServer(version string) *Server {
 		TextDocumentColor:              s.textDocumentDocumentColor,
 		TextDocumentColorPresentation:  s.textDocumentColorPresentation,
 		TextDocumentSemanticTokensFull: s.textDocumentSemanticTokensFull,
+		TextDocumentFormatting:         s.textDocumentFormatting,
 	}
 
 	return s
@@ -76,6 +78,7 @@ func (s *Server) initialize(_ *glsp.Context, params *protocol.InitializeParams) 
 			Delta: &protocol.False,
 		},
 	}
+	capabilities.DocumentFormattingProvider = true
 
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
@@ -182,4 +185,38 @@ func (s *Server) textDocumentSemanticTokensFull(_ *glsp.Context, params *protoco
 
 	data := semanticTokensFull(content)
 	return &protocol.SemanticTokens{Data: data}, nil
+}
+
+// textDocumentFormatting handles textDocument/formatting requests
+func (s *Server) textDocumentFormatting(_ *glsp.Context, params *protocol.DocumentFormattingParams) ([]protocol.TextEdit, error) {
+	uri := string(params.TextDocument.URI)
+	content, ok := s.docs.Get(uri)
+	if !ok {
+		return nil, nil
+	}
+
+	formatted, err := format(content)
+	if err != nil {
+		return nil, err
+	}
+
+	// If content hasn't changed, return nil (no edits needed)
+	if formatted == content {
+		return nil, nil
+	}
+
+	// Return a single text edit that replaces the entire document
+	lines := strings.Split(content, "\n")
+	endLine := uint32(len(lines) - 1)
+	endChar := uint32(len(lines[len(lines)-1]))
+
+	return []protocol.TextEdit{
+		{
+			Range: protocol.Range{
+				Start: protocol.Position{Line: 0, Character: 0},
+				End:   protocol.Position{Line: endLine, Character: endChar},
+			},
+			NewText: formatted,
+		},
+	}, nil
 }
