@@ -181,21 +181,49 @@ func extractTokensFromLiteral(expr *hclsyntax.LiteralValueExpr, tokens []Semanti
 	return tokens
 }
 
-// extractTokensFromTraversal handles palette references like palette.base
+// extractTokensFromTraversal handles any block reference like palette.base or ansi.red
 func extractTokensFromTraversal(expr *hclsyntax.ScopeTraversalExpr, tokens []SemanticToken) []SemanticToken {
-	if len(expr.Traversal) > 0 {
-		first, ok := expr.Traversal[0].(hcl.TraverseRoot)
-		if ok && first.Name == "palette" {
-			// This is a palette reference - tokenize the whole thing
+	if len(expr.Traversal) == 0 {
+		return tokens
+	}
+
+	// Check if first segment is a valid block name
+	first, ok := expr.Traversal[0].(hcl.TraverseRoot)
+	if !ok {
+		return tokens
+	}
+
+	// Check if it's a referenceable block
+	if _, exists := BlockTypes[first.Name]; !exists {
+		return tokens
+	}
+
+	// Tokenize block name as namespace
+	tokens = append(tokens, SemanticToken{
+		Line:      uint32(first.SrcRange.Start.Line - 1),
+		StartChar: uint32(first.SrcRange.Start.Column - 1),
+		Length:    uint32(len(first.Name)),
+		Type:      tokenTypeIndices["namespace"],
+		Modifiers: 0,
+	})
+
+	// Tokenize each subsequent segment as property
+	for i := 1; i < len(expr.Traversal); i++ {
+		switch seg := expr.Traversal[i].(type) {
+		case hcl.TraverseAttr:
+			// SrcRange includes the leading dot, so use Start.Column directly
 			tokens = append(tokens, SemanticToken{
-				Line:      uint32(expr.SrcRange.Start.Line - 1),
-				StartChar: uint32(expr.SrcRange.Start.Column - 1),
-				Length:    uint32(expr.SrcRange.End.Column - expr.SrcRange.Start.Column),
-				Type:      tokenTypeIndices["variable"],
+				Line:      uint32(seg.SrcRange.Start.Line - 1),
+				StartChar: uint32(seg.SrcRange.Start.Column),
+				Length:    uint32(len(seg.Name)),
+				Type:      tokenTypeIndices["property"],
 				Modifiers: 0,
 			})
+		case hcl.TraverseIndex:
+			// Handle index access like palette.colors[0] if needed
 		}
 	}
+
 	return tokens
 }
 

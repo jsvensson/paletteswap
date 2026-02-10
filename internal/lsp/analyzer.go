@@ -27,6 +27,39 @@ var requiredANSIColors = []string{
 	"bright_blue", "bright_magenta", "bright_cyan", "bright_white",
 }
 
+// BlockType defines the behavior of each top-level block
+type BlockType struct {
+	Name            string
+	SupportsNesting bool     // theme, syntax, palette = true; ansi = false
+	SelfReferencing bool     // Can reference earlier items in same block
+	StrictNames     []string // For ANSI: only these names allowed
+}
+
+// BlockTypes defines the configuration for each referenceable block
+var BlockTypes = map[string]BlockType{
+	"palette": {
+		Name:            "palette",
+		SupportsNesting: true,
+		SelfReferencing: true,
+	},
+	"theme": {
+		Name:            "theme",
+		SupportsNesting: true,
+		SelfReferencing: true,
+	},
+	"syntax": {
+		Name:            "syntax",
+		SupportsNesting: true,
+		SelfReferencing: true,
+	},
+	"ansi": {
+		Name:            "ansi",
+		SupportsNesting: false,
+		SelfReferencing: false,
+		StrictNames:     requiredANSIColors,
+	},
+}
+
 // AnalysisResult holds all information produced by analyzing a theme file.
 type AnalysisResult struct {
 	Diagnostics []protocol.Diagnostic
@@ -88,30 +121,22 @@ func Analyze(filename, content string) *AnalysisResult {
 		return result
 	}
 
-	// Find the palette block
-	var paletteBody *hclsyntax.Body
-	var themeBody *hclsyntax.Body
-	var ansiBody *hclsyntax.Body
-	var syntaxBody *hclsyntax.Body
-	var ansiBlockRange hcl.Range
+	// Track blocks for processing
+	blockBodies := make(map[string]*hclsyntax.Body)
+	blockRanges := make(map[string]hcl.Range)
 
+	// First pass: collect all blocks and store their locations
 	for _, block := range body.Blocks {
-		switch block.Type {
-		case "palette":
-			paletteBody = block.Body
-		case "theme":
-			themeBody = block.Body
-		case "ansi":
-			ansiBody = block.Body
-			ansiBlockRange = block.DefRange()
-		case "syntax":
-			syntaxBody = block.Body
-		case "meta":
-			// meta is handled by gohcl in the parser; we skip it here
+		if _, exists := BlockTypes[block.Type]; exists {
+			blockBodies[block.Type] = block.Body
+			blockRanges[block.Type] = block.DefRange()
+			// Store block location in symbols
+			result.Symbols[block.Type] = hclRangeToLSP(block.DefRange())
 		}
 	}
 
-	if paletteBody == nil {
+	// Check for required palette block
+	if _, hasPalette := blockBodies["palette"]; !hasPalette {
 		result.addError(hcl.Range{
 			Filename: filename,
 			Start:    hcl.Pos{Line: 1, Column: 1},
@@ -120,31 +145,37 @@ func Analyze(filename, content string) *AnalysisResult {
 		return result
 	}
 
-	// Parse palette with incremental evaluation (source-ordered, self-referencing)
-	palette := &color.Node{}
-	result.analyzePaletteBody(paletteBody, palette, palette, "palette")
-	result.Palette = palette
-
-	// Build eval context with palette + functions
-	ctx := buildAnalyzerEvalContext(palette)
-
-	// Walk theme block
-	if themeBody != nil {
-		result.analyzeColorBlock(themeBody, ctx, "theme")
+	// Build initial eval context with functions
+	ctx := &hcl.EvalContext{
+		Variables: make(map[string]cty.Value),
+		Functions: map[string]function.Function{
+			"brighten": makeBrightenFuncAnalyzer(),
+			"darken":   makeDarkenFuncAnalyzer(),
+		},
 	}
 
-	// Walk ansi block
-	ansiColors := make(map[string]bool)
-	if ansiBody != nil {
-		ansiColors = result.analyzeColorBlock(ansiBody, ctx, "ansi")
+	// Process palette first (required and may be referenced by others)
+	if paletteBody, ok := blockBodies["palette"]; ok {
+		palette, _ := result.analyzeBlock(paletteBody, BlockTypes["palette"], ctx, "palette")
+		result.Palette = palette
+		ctx.Variables["palette"] = nodeToCtyAnalyzer(palette)
 	}
 
-	// Validate ANSI completeness
-	result.validateANSICompleteness(ansiColors, ansiBlockRange, filename)
+	// Process theme (self-referencing, can reference palette)
+	if themeBody, ok := blockBodies["theme"]; ok {
+		themeNode, _ := result.analyzeBlock(themeBody, BlockTypes["theme"], ctx, "theme")
+		ctx.Variables["theme"] = nodeToCtyAnalyzer(themeNode)
+	}
 
-	// Walk syntax block
-	if syntaxBody != nil {
-		result.analyzeSyntaxBody(syntaxBody, ctx, "syntax")
+	// Process ansi (strict names, can reference palette/theme)
+	if ansiBody, ok := blockBodies["ansi"]; ok {
+		_, ansiResolved := result.analyzeBlock(ansiBody, BlockTypes["ansi"], ctx, "ansi")
+		result.validateANSICompleteness(ansiResolved, blockRanges["ansi"], filename)
+	}
+
+	// Process syntax (self-referencing, can reference all others)
+	if syntaxBody, ok := blockBodies["syntax"]; ok {
+		_, _ = result.analyzeBlock(syntaxBody, BlockTypes["syntax"], ctx, "syntax")
 	}
 
 	return result
@@ -520,4 +551,234 @@ func buildAnalyzerEvalContext(palette *color.Node) *hcl.EvalContext {
 			"darken":   makeDarkenFuncAnalyzer(),
 		},
 	}
+}
+
+// blockItem represents an attribute or block in source order.
+type blockItem struct {
+	pos   hcl.Pos
+	attr  *hclsyntax.Attribute
+	block *hclsyntax.Block
+}
+
+// BlockContext holds the state for a block being analyzed
+type BlockContext struct {
+	Name      string
+	BlockType BlockType
+	Node      *color.Node // For building color tree
+	Symbols   map[string]protocol.Range
+	Items     []blockItem
+}
+
+// isValidANSIName checks if a name is in the list of valid ANSI colors
+func isValidANSIName(name string) bool {
+	for _, valid := range requiredANSIColors {
+		if name == valid {
+			return true
+		}
+	}
+	return false
+}
+
+// hasCircularReference checks if an expression references something not yet defined
+// within the current block being analyzed
+func (r *AnalysisResult) hasCircularReference(expr hclsyntax.Expression, currentPrefix string) bool {
+	switch e := expr.(type) {
+	case *hclsyntax.ScopeTraversalExpr:
+		if len(e.Traversal) > 0 {
+			if root, ok := e.Traversal[0].(hcl.TraverseRoot); ok {
+				var parts []string
+				parts = append(parts, root.Name)
+				for _, t := range e.Traversal[1:] {
+					if attr, ok := t.(hcl.TraverseAttr); ok {
+						parts = append(parts, attr.Name)
+					}
+				}
+				refPath := strings.Join(parts, ".")
+
+				// Check if referencing current block with path not yet defined
+				if strings.HasPrefix(refPath, currentPrefix+".") {
+					if _, exists := r.Symbols[refPath]; !exists {
+						return true
+					}
+				}
+			}
+		}
+	case *hclsyntax.FunctionCallExpr:
+		for _, arg := range e.Args {
+			if r.hasCircularReference(arg, currentPrefix) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// analyzeBlock processes any block type with unified logic
+func (r *AnalysisResult) analyzeBlock(body *hclsyntax.Body, blockType BlockType,
+	parentCtx *hcl.EvalContext, prefix string) (*color.Node, map[string]bool) {
+
+	ctx := &BlockContext{
+		Name:      blockType.Name,
+		BlockType: blockType,
+		Node:      &color.Node{},
+		Symbols:   make(map[string]protocol.Range),
+		Items:     []blockItem{},
+	}
+
+	// Collect items
+	for _, attr := range body.Attributes {
+		// Validate ANSI names if strict
+		if blockType.StrictNames != nil {
+			if !isValidANSIName(attr.Name) {
+				r.addError(attr.SrcRange,
+					fmt.Sprintf("ansi.%s is not a valid ANSI color name", attr.Name))
+				continue
+			}
+		}
+		ctx.Items = append(ctx.Items, blockItem{pos: attr.SrcRange.Start, attr: attr})
+	}
+
+	for _, block := range body.Blocks {
+		if !blockType.SupportsNesting {
+			r.addError(block.DefRange(),
+				fmt.Sprintf("%s block does not support nesting", blockType.Name))
+			continue
+		}
+		ctx.Items = append(ctx.Items, blockItem{pos: block.DefRange().Start, block: block})
+	}
+
+	// Sort by source position for self-referencing blocks
+	if blockType.SelfReferencing {
+		sort.Slice(ctx.Items, func(i, j int) bool {
+			if ctx.Items[i].pos.Line != ctx.Items[j].pos.Line {
+				return ctx.Items[i].pos.Line < ctx.Items[j].pos.Line
+			}
+			return ctx.Items[i].pos.Column < ctx.Items[j].pos.Column
+		})
+	}
+
+	// Process items
+	resolved := make(map[string]bool)
+	currentCtx := parentCtx
+
+	for _, item := range ctx.Items {
+		// Rebuild context after each item for self-referencing blocks
+		if blockType.SelfReferencing {
+			currentCtx = r.buildBlockEvalContext(currentCtx, prefix, ctx.Node)
+		}
+
+		if item.attr != nil {
+			r.processBlockAttribute(item.attr, ctx, currentCtx, prefix, resolved)
+		} else {
+			r.processBlockNestedBlock(item.block, ctx, currentCtx, prefix, resolved)
+		}
+	}
+
+	return ctx.Node, resolved
+}
+
+// processBlockAttribute processes a single attribute in a block
+func (r *AnalysisResult) processBlockAttribute(attr *hclsyntax.Attribute,
+	ctx *BlockContext, evalCtx *hcl.EvalContext, prefix string, resolved map[string]bool) {
+
+	symbolName := prefix + "." + attr.Name
+
+	// Check for circular references
+	if ctx.BlockType.SelfReferencing && r.hasCircularReference(attr.Expr, prefix) {
+		r.addError(attr.SrcRange, fmt.Sprintf("circular reference detected in %s", symbolName))
+		return
+	}
+
+	val, diags := attr.Expr.Value(evalCtx)
+	if diags.HasErrors() {
+		errStr := diags.Error()
+		// Filter out "Invalid attribute name" errors during editing
+		// These occur when user types "palette." and hasn't typed the attribute yet
+		if strings.Contains(errStr, "Invalid attribute name") {
+			return
+		}
+		r.addError(attr.SrcRange, fmt.Sprintf("%s: %s", symbolName, errStr))
+		return
+	}
+
+	// Handle boolean attributes (bold, italic, underline in syntax)
+	if val.Type() == cty.Bool {
+		ctx.Symbols[symbolName] = hclRangeToLSP(attr.SrcRange)
+		r.Symbols[symbolName] = hclRangeToLSP(attr.SrcRange)
+		resolved[attr.Name] = true
+		return
+	}
+
+	hexStr, err := analyzerResolveColor(val)
+	if err != nil {
+		r.addError(attr.SrcRange, fmt.Sprintf("%s: %s", symbolName, err.Error()))
+		return
+	}
+
+	c, err := color.ParseHex(hexStr)
+	if err != nil {
+		r.addError(attr.SrcRange, fmt.Sprintf("%s: %s", symbolName, err.Error()))
+		return
+	}
+
+	// Record color location
+	isRef := isReferenceExpr(attr.Expr)
+	r.Colors = append(r.Colors, ColorLocation{
+		Range: hclRangeToLSP(attr.Expr.Range()),
+		Color: c,
+		IsRef: isRef,
+	})
+
+	// Store symbol
+	ctx.Symbols[symbolName] = hclRangeToLSP(attr.SrcRange)
+	r.Symbols[symbolName] = hclRangeToLSP(attr.SrcRange)
+
+	// Update node tree
+	if ctx.Node.Children == nil {
+		ctx.Node.Children = make(map[string]*color.Node)
+	}
+	ctx.Node.Children[attr.Name] = &color.Node{Color: &c}
+
+	resolved[attr.Name] = true
+}
+
+// processBlockNestedBlock processes a nested block
+func (r *AnalysisResult) processBlockNestedBlock(block *hclsyntax.Block,
+	ctx *BlockContext, evalCtx *hcl.EvalContext, prefix string, resolved map[string]bool) {
+
+	childPrefix := prefix + "." + block.Type
+
+	// Store nested block symbol
+	ctx.Symbols[childPrefix] = hclRangeToLSP(block.DefRange())
+	r.Symbols[childPrefix] = hclRangeToLSP(block.DefRange())
+
+	// Recursively analyze nested block with same block type
+	childNode, _ := r.analyzeBlock(block.Body, ctx.BlockType, evalCtx, childPrefix)
+
+	// Add to parent node
+	if ctx.Node.Children == nil {
+		ctx.Node.Children = make(map[string]*color.Node)
+	}
+	ctx.Node.Children[block.Type] = childNode
+}
+
+// buildBlockEvalContext rebuilds eval context with current block state
+func (r *AnalysisResult) buildBlockEvalContext(parentCtx *hcl.EvalContext,
+	blockName string, node *color.Node) *hcl.EvalContext {
+
+	// Copy parent context
+	newCtx := &hcl.EvalContext{
+		Variables: make(map[string]cty.Value),
+		Functions: parentCtx.Functions,
+	}
+	for k, v := range parentCtx.Variables {
+		newCtx.Variables[k] = v
+	}
+
+	// Update this block's variable
+	if node != nil {
+		newCtx.Variables[blockName] = nodeToCtyAnalyzer(node)
+	}
+
+	return newCtx
 }

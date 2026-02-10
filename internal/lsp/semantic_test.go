@@ -96,10 +96,10 @@ theme {
 	result := semanticTokensFull(content)
 
 	// Should have: palette(keyword), base(property),
-	//              theme(keyword), background(property), palette.base(variable)
-	// That's 5 tokens = 25 integers
-	if len(result) != 25 {
-		t.Errorf("semanticTokensFull() returned %d integers, want 25", len(result))
+	//              theme(keyword), background(property), palette(namespace), base(property)
+	// That's 6 tokens = 30 integers
+	if len(result) != 30 {
+		t.Errorf("semanticTokensFull() returned %d integers, want 30", len(result))
 	}
 }
 
