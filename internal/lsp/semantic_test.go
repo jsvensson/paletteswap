@@ -167,10 +167,14 @@ syntax {
 		t.Errorf("semantic tokens data length %d is not a multiple of 5", len(result))
 	}
 
-	// Should have at least: meta, name, palette, base, surface, highlight, low, high,
-	// theme, background, foreground, syntax, keyword, comment, color, italic
-	// That's at least 16 tokens = 80 integers
-	if len(result) < 80 {
-		t.Errorf("semanticTokensFull() returned %d integers, expected at least 80", len(result))
+	// Token count increased due to split palette references:
+	// - palette.base = 2 tokens (was 1)
+	// - palette.surface = 2 tokens (was 1)
+	// - palette.highlight.low = 3 tokens (was 1)
+	// - palette.highlight.high = 3 tokens (was 1)
+	// Total increase: +6 tokens = +30 integers
+	// Previous minimum was 80, new minimum is 110
+	if len(result) < 110 {
+		t.Errorf("semanticTokensFull() returned %d integers, expected at least 110", len(result))
 	}
 }
