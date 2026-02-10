@@ -37,29 +37,34 @@ jobs:
         id: check
         env:
           EVENT_NAME: ${{ github.event_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           # For manual triggers, always release
           if [ "$EVENT_NAME" == "workflow_dispatch" ]; then
-            echo "should-release=true" >> $GITHUB_OUTPUT
+            echo "should-release=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # For PR merges, check if any commits are feat/fix/perf/refactor/build/ci
-          # Get commits in the PR
-          COMMITS=$(git log --format=%s "$BASE_SHA..$HEAD_SHA")
+          # For PR merges, check the merge/squash commit message and PR info
+          # Squash/rebase merges create new commits, so we check the commit message
+          MERGE_COMMIT=$(git log -1 --format=%B)
 
-          # Log commits for debugging
-          echo "Commits in this PR:"
-          echo "$COMMITS"
+          echo "Merge commit message:"
+          echo "$MERGE_COMMIT"
+          echo ""
+          echo "PR Title: $PR_TITLE"
 
-          # Check for releasable commit types
-          if echo "$COMMITS" | grep -qE '^(feat|fix|perf|refactor|build|ci)(\(.+\))?:'; then
-            echo "should-release=true" >> $GITHUB_OUTPUT
+          # Combine merge commit message, PR title, and PR body for checking
+          # Squash merges include all commit messages in the body
+          COMBINED_TEXT=$(printf '%s\n%s\n%s' "$MERGE_COMMIT" "$PR_TITLE" "$PR_BODY")
+
+          # Check for releasable commit types in any of the text
+          if echo "$COMBINED_TEXT" | grep -qE '^(feat|fix|perf|refactor|build|ci)(\(.+\))?:'; then
+            echo "should-release=true" >> "$GITHUB_OUTPUT"
             echo "Found releasable commits"
           else
-            echo "should-release=false" >> $GITHUB_OUTPUT
+            echo "should-release=false" >> "$GITHUB_OUTPUT"
             echo "No releasable commits found (only chore/docs/test/style)"
           fi
 
