@@ -11,16 +11,16 @@ import (
 // posInRange returns true if pos is within the range [r.Start, r.End).
 // The end position is exclusive.
 func posInRange(pos protocol.Position, r protocol.Range) bool {
-	if pos.Line < r.Start.Line || pos.Line > r.End.Line {
+	switch {
+	case pos.Line < r.Start.Line || pos.Line > r.End.Line:
 		return false
-	}
-	if pos.Line == r.Start.Line && pos.Character < r.Start.Character {
+	case pos.Line == r.Start.Line && pos.Character < r.Start.Character:
 		return false
-	}
-	if pos.Line == r.End.Line && pos.Character >= r.End.Character {
+	case pos.Line == r.End.Line && pos.Character >= r.End.Character:
 		return false
+	default:
+		return true
 	}
-	return true
 }
 
 // extractText extracts the source text at a given LSP range from document content.
@@ -54,19 +54,14 @@ func extractText(content string, r protocol.Range) string {
 	var parts []string
 	for i := startLine; i <= endLine; i++ {
 		line := lines[i]
-		if i == startLine {
-			startChar := int(r.Start.Character)
-			if startChar > len(line) {
-				startChar = len(line)
-			}
+		switch i {
+		case startLine:
+			startChar := min(int(r.Start.Character), len(line))
 			parts = append(parts, line[startChar:])
-		} else if i == endLine {
-			endChar := int(r.End.Character)
-			if endChar > len(line) {
-				endChar = len(line)
-			}
+		case endLine:
+			endChar := min(int(r.End.Character), len(line))
 			parts = append(parts, line[:endChar])
-		} else {
+		default:
 			parts = append(parts, line)
 		}
 	}
