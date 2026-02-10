@@ -212,9 +212,10 @@ func extractTokensFromTraversal(expr *hclsyntax.ScopeTraversalExpr, tokens []Sem
 	for i := 1; i < len(expr.Traversal); i++ {
 		switch seg := expr.Traversal[i].(type) {
 		case hcl.TraverseAttr:
+			// SrcRange includes the leading dot, so add 1 to skip it
 			tokens = append(tokens, SemanticToken{
 				Line:      uint32(seg.SrcRange.Start.Line - 1),
-				StartChar: uint32(seg.SrcRange.Start.Column - 1),
+				StartChar: uint32(seg.SrcRange.Start.Column),
 				Length:    uint32(len(seg.Name)),
 				Type:      tokenTypeIndices["property"],
 				Modifiers: 0,
