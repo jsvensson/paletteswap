@@ -214,9 +214,7 @@ paletteswap generate --app ghostty --app zed
 paletteswap generate --theme mytheme.hcl --templates ./templates --out ./themes
 ```
 
-## Releases
-
-PaletteSwap uses [semantic versioning](https://semver.org/) and [conventional commits](https://www.conventionalcommits.org/).
+## Release Process
 
 ### Creating a Release
 
@@ -235,22 +233,6 @@ PaletteSwap uses [semantic versioning](https://semver.org/) and [conventional co
    - Create a git tag
    - Build cross-platform binaries
    - Publish GitHub release with binaries
-
-### Installing from Release
-
-Download the appropriate binary for your platform from the [releases page](https://github.com/jsvensson/paletteswap/releases):
-
-```bash
-# macOS (Apple Silicon)
-curl -L -o paletteswap.tar.gz https://github.com/jsvensson/paletteswap/releases/latest/download/paletteswap_Darwin_arm64.tar.gz
-tar -xzf paletteswap.tar.gz
-mv paletteswap /usr/local/bin/
-
-# Linux (x86_64)
-curl -L -o paletteswap.tar.gz https://github.com/jsvensson/paletteswap/releases/latest/download/paletteswap_Linux_x86_64.tar.gz
-tar -xzf paletteswap.tar.gz
-sudo mv paletteswap /usr/local/bin/
-```
 
 # Inspiration
 
