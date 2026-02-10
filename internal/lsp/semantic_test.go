@@ -178,3 +178,29 @@ syntax {
 		t.Errorf("semanticTokensFull() returned %d integers, expected at least 110", len(result))
 	}
 }
+
+func TestSemanticTokensFull_NestedPaletteReference(t *testing.T) {
+	content := `palette {
+  highlight {
+    low = "#21202e"
+  }
+}
+theme {
+  background = palette.highlight.low
+}`
+	result := semanticTokensFull(content)
+
+	// Should have:
+	// palette(keyword), highlight(keyword), low(property),  <- palette block
+	// theme(keyword), background(property),                  <- theme block
+	// palette(namespace), highlight(property), low(property) <- reference split into 3
+	// That's 8 tokens = 40 integers
+	if len(result) != 40 {
+		t.Errorf("semanticTokensFull() returned %d integers, want 40", len(result))
+	}
+
+	// Verify the data is valid (multiple of 5)
+	if len(result)%5 != 0 {
+		t.Errorf("semantic tokens data length %d is not a multiple of 5", len(result))
+	}
+}
