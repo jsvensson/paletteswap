@@ -13,14 +13,54 @@ on:
           - major
           - minor
           - patch
+  pull_request:
+    types: [closed]
+    branches: [main]
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  release-pr:
+  check-releasable:
     runs-on: ubuntu-latest
+    outputs:
+      should-release: ${{ steps.check.outputs.should-release }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for releasable commits
+        id: check
+        run: |
+          # For manual triggers, always release
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "should-release=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # For PR merges, check if any commits are feat/fix/perf/refactor/build/ci
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          # Get commits in the PR
+          COMMITS=$(git log --format=%s "$BASE_SHA..$HEAD_SHA")
+
+          # Check for releasable commit types
+          if echo "$COMMITS" | grep -qE '^(feat|fix|perf|refactor|build|ci)(\(.+\))?:'; then
+            echo "should-release=true" >> $GITHUB_OUTPUT
+            echo "Found releasable commits"
+          else
+            echo "should-release=false" >> $GITHUB_OUTPUT
+            echo "No releasable commits found (only chore/docs/test/style)"
+          fi
+
+  release-pr:
+    needs: check-releasable
+    runs-on: ubuntu-latest
+    if: needs.check-releasable.outputs.should-release == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
