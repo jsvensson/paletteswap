@@ -214,6 +214,44 @@ paletteswap generate --app ghostty --app zed
 paletteswap generate --theme mytheme.hcl --templates ./templates --out ./themes
 ```
 
+## Releases
+
+PaletteSwap uses [semantic versioning](https://semver.org/) and [conventional commits](https://www.conventionalcommits.org/).
+
+### Creating a Release
+
+1. Ensure PR titles follow conventional commit format:
+   - `feat: add new feature` → minor version bump
+   - `fix: correct bug` → patch version bump
+   - `feat!: breaking change` or `BREAKING CHANGE:` in body → major version bump
+
+2. Go to **Actions** → **Create Release PR** → **Run workflow**
+
+3. Review the generated PR which includes:
+   - Updated `CHANGELOG.md`
+   - Version bump
+
+4. Merge the PR to automatically:
+   - Create a git tag
+   - Build cross-platform binaries
+   - Publish GitHub release with binaries
+
+### Installing from Release
+
+Download the appropriate binary for your platform from the [releases page](https://github.com/jsvensson/paletteswap/releases):
+
+```bash
+# macOS (Apple Silicon)
+curl -L -o paletteswap.tar.gz https://github.com/jsvensson/paletteswap/releases/latest/download/paletteswap_Darwin_arm64.tar.gz
+tar -xzf paletteswap.tar.gz
+mv paletteswap /usr/local/bin/
+
+# Linux (x86_64)
+curl -L -o paletteswap.tar.gz https://github.com/jsvensson/paletteswap/releases/latest/download/paletteswap_Linux_x86_64.tar.gz
+tar -xzf paletteswap.tar.gz
+sudo mv paletteswap /usr/local/bin/
+```
+
 # Inspiration
 
 With ❤️ to [Rosé Pine](https://rosepinetheme.com/) and [Biscuit](https://github.com/Biscuit-Theme/biscuit), two great color themes.
