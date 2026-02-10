@@ -7,15 +7,16 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 )
 
-// Semantic token types we'll use (indices 0-6)
+// Semantic token types we'll use (indices 0-7)
 var semanticTokenTypes = []string{
-	"keyword",  // 0: block names (meta, palette, theme, ansi, syntax)
-	"property", // 1: attribute names
-	"variable", // 2: palette references (palette.xxx)
-	"string",   // 3: hex color literals
-	"function", // 4: brighten(), darken()
-	"number",   // 5: numeric literals
-	"comment",  // 6: comments
+	"keyword",   // 0: block names (meta, palette, theme, ansi, syntax)
+	"property",  // 1: attribute names
+	"variable",  // 2: palette references (kept for non-palette refs if needed)
+	"namespace", // 3: the "palette" namespace identifier
+	"string",    // 4: hex color literals
+	"function",  // 5: brighten(), darken()
+	"number",    // 6: numeric literals
+	"comment",   // 7: comments
 }
 
 // Semantic token modifiers (bit flags)
@@ -211,7 +212,7 @@ func extractTokensFromTraversal(expr *hclsyntax.ScopeTraversalExpr, tokens []Sem
 	for i := 1; i < len(expr.Traversal); i++ {
 		switch seg := expr.Traversal[i].(type) {
 		case hcl.TraverseAttr:
-			// SrcRange includes the leading dot, so use Start.Column directly
+			// SrcRange includes the leading dot, so add 1 to skip it
 			tokens = append(tokens, SemanticToken{
 				Line:      uint32(seg.SrcRange.Start.Line - 1),
 				StartChar: uint32(seg.SrcRange.Start.Column),
@@ -221,6 +222,7 @@ func extractTokensFromTraversal(expr *hclsyntax.ScopeTraversalExpr, tokens []Sem
 			})
 		case hcl.TraverseIndex:
 			// Handle index access like palette.colors[0] if needed
+			// For now, skip or handle as needed
 		}
 	}
 
