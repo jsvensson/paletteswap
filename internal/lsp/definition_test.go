@@ -24,10 +24,10 @@ theme {
 		t.Fatal("expected palette.base in symbol table")
 	}
 
-	// Position cursor on "palette.base" in the theme block (line 5, somewhere in "palette.base")
+	// Position cursor on "base" in "palette.base" in the theme block (line 5)
 	// Line 5 is "  background = palette.base"
-	// "palette.base" starts at character 15
-	pos := protocol.Position{Line: 5, Character: 17} // inside "palette.base"
+	// "palette.base" starts at character 15, "base" starts at character 23
+	pos := protocol.Position{Line: 5, Character: 24} // inside "base"
 	uri := "file:///test.pstheme"
 
 	loc := definition(result, content, uri, pos)
@@ -65,8 +65,8 @@ theme {
 	}
 
 	// Line 8 is "  background = palette.highlight.low"
-	// "palette.highlight.low" starts at character 15
-	pos := protocol.Position{Line: 8, Character: 20} // inside "palette.highlight.low"
+	// "palette.highlight.low" starts at character 15, "low" starts at character 33
+	pos := protocol.Position{Line: 8, Character: 34} // inside "low"
 	uri := "file:///test.pstheme"
 
 	loc := definition(result, content, uri, pos)

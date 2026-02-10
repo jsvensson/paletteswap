@@ -7,9 +7,12 @@ import (
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
 
-// paletteRefAtCursor extracts the full palette reference (e.g. "palette.highlight.low")
-// at the given cursor position in a line, or returns "" if the cursor is not on a palette reference.
-func paletteRefAtCursor(line string, character uint32) string {
+// blockRefAtCursor extracts the block reference path up to the cursor position.
+// Works with any block: palette, theme, ansi, syntax.
+// For example, if cursor is on "palette" in "palette.base", it returns "palette".
+// If cursor is on "base" in "palette.base", it returns "palette.base".
+// Returns "" if the cursor is not on a block reference.
+func blockRefAtCursor(line string, character uint32) string {
 	col := int(character)
 	if col >= len(line) {
 		return ""
@@ -28,11 +31,40 @@ func paletteRefAtCursor(line string, character uint32) string {
 	}
 
 	word := line[start:end]
-	if !strings.HasPrefix(word, "palette.") {
+
+	// Check if it's a valid block reference
+	parts := strings.Split(word, ".")
+	if len(parts) == 0 {
 		return ""
 	}
 
-	return word
+	// Check if first part is a valid block name
+	if _, exists := BlockTypes[parts[0]]; !exists {
+		return ""
+	}
+
+	// If cursor is on just the block name, check if followed by dot
+	if len(parts) == 1 && word == parts[0] {
+		if end < len(line) && line[end] == '.' {
+			return parts[0]
+		}
+		return ""
+	}
+
+	// Calculate cursor position within word and return path up to cursor
+	cursorInWord := col - start
+	var resultParts []string
+	currentPos := 0
+
+	for _, part := range parts {
+		partEnd := currentPos + len(part)
+		if currentPos <= cursorInWord {
+			resultParts = append(resultParts, part)
+		}
+		currentPos = partEnd + 1 // +1 for dot
+	}
+
+	return strings.Join(resultParts, ".")
 }
 
 // isIdentChar returns true if the byte is a valid identifier character
@@ -60,7 +92,7 @@ func definition(result *AnalysisResult, content string, uri string, pos protocol
 	}
 
 	line := lines[lineIdx]
-	ref := paletteRefAtCursor(line, pos.Character)
+	ref := blockRefAtCursor(line, pos.Character)
 	if ref == "" {
 		return nil
 	}
