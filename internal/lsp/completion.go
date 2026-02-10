@@ -18,12 +18,12 @@ type blockContext int
 
 const (
 	contextRoot    blockContext = iota
-	contextMeta                // inside meta {}
-	contextPalette             // inside palette {}
-	contextTheme               // inside theme {}
-	contextAnsi                // inside ansi {}
-	contextSyntax              // inside syntax {} (top level)
-	contextStyle               // inside a sub-block of syntax {} (style block)
+	contextMeta                 // inside meta {}
+	contextPalette              // inside palette {}
+	contextTheme                // inside theme {}
+	contextAnsi                 // inside ansi {}
+	contextSyntax               // inside syntax {} (top level)
+	contextStyle                // inside a sub-block of syntax {} (style block)
 )
 
 // styleAttributes are the valid attributes inside a syntax style block.
@@ -42,10 +42,7 @@ func complete(result *AnalysisResult, content string, pos protocol.Position) []p
 	}
 
 	line := lines[pos.Line]
-	charPos := int(pos.Character)
-	if charPos > len(line) {
-		charPos = len(line)
-	}
+	charPos := min(int(pos.Character), len(line))
 	textBeforeCursor := line[:charPos]
 
 	// Check for palette path completion: look for "palette." or "palette.xxx."
@@ -98,8 +95,8 @@ func tryPaletteCompletion(result *AnalysisResult, textBeforeCursor string) []pro
 	var segments []string
 	if pathStr == "" {
 		segments = nil
-	} else if strings.HasSuffix(pathStr, ".") {
-		trimmed := strings.TrimSuffix(pathStr, ".")
+	} else if before, ok := strings.CutSuffix(pathStr, "."); ok {
+		trimmed := before
 		segments = strings.Split(trimmed, ".")
 	} else if strings.Contains(pathStr, ".") {
 		parts := strings.Split(pathStr, ".")
@@ -222,7 +219,7 @@ func determineBlockContext(lines []string, cursorLine int) blockContext {
 			parts := strings.Fields(line)
 			if len(parts) >= 1 {
 				name := parts[0]
-				for j := 0; j < opens; j++ {
+				for range opens {
 					stack = append(stack, blockInfo{name: name})
 				}
 			}
@@ -230,7 +227,7 @@ func determineBlockContext(lines []string, cursorLine int) blockContext {
 
 		// Process closing braces
 		if closes > 0 {
-			for j := 0; j < closes; j++ {
+			for range closes {
 				if len(stack) > 0 {
 					stack = stack[:len(stack)-1]
 				}
