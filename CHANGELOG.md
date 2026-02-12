@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.2](https://github.com/jsvensson/paletteswap/compare/v0.1.1...v0.1.2) (2026-02-12)
+
+
+### Bug Fixes
+
+* **lsp:** add DefinitionProvider capability for Zed compatibility ([#46](https://github.com/jsvensson/paletteswap/issues/46)) ([7078b5d](https://github.com/jsvensson/paletteswap/commit/7078b5d3d9a2e258b862ad0c991d9ccc4f73f7c9))
+
+
+### CI/CD
+
+* remove draft setting to enable automatic releases ([0f01f8f](https://github.com/jsvensson/paletteswap/commit/0f01f8f0c88f35bc8fe1919351fe131af3c7960e))
+
 ## [0.1.1](https://github.com/jsvensson/paletteswap/compare/v0.1.0...v0.1.1) (2026-02-10)
 
 
