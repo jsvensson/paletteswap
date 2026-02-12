@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.3](https://github.com/jsvensson/paletteswap/compare/v0.1.2...v0.1.3) (2026-02-12)
+
+
+### CI/CD
+
+* add missing issues:write permission for release-please ([#51](https://github.com/jsvensson/paletteswap/issues/51)) ([24826ce](https://github.com/jsvensson/paletteswap/commit/24826ceb122a03930234f1051d19ebb035969150))
+* add pstheme-lsp binary to release builds ([#49](https://github.com/jsvensson/paletteswap/issues/49)) ([34c3ed5](https://github.com/jsvensson/paletteswap/commit/34c3ed5c87070fdb5205583ba72b867f87423fba))
+* exclude ci commits from triggering release-please ([#52](https://github.com/jsvensson/paletteswap/issues/52)) ([3ee7cdd](https://github.com/jsvensson/paletteswap/commit/3ee7cdda093c991786b15496618633640c17de63))
+* fix release workflow to handle release-please PRs ([#48](https://github.com/jsvensson/paletteswap/issues/48)) ([6cd24e7](https://github.com/jsvensson/paletteswap/commit/6cd24e7d45bfcef2003a581be80882516be64e8d))
+* fix release-please permissions by using push trigger ([#50](https://github.com/jsvensson/paletteswap/issues/50)) ([212eb77](https://github.com/jsvensson/paletteswap/commit/212eb7726e7c41cee739c2a7e1f1ccbbc5eaeafb))
+
 ## [0.1.2](https://github.com/jsvensson/paletteswap/compare/v0.1.1...v0.1.2) (2026-02-12)
 
 
