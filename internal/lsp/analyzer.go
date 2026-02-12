@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/jsvensson/paletteswap/internal/color"
+	"github.com/jsvensson/paletteswap/internal/theme"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
@@ -18,14 +19,6 @@ var (
 	DiagWarning = protocol.DiagnosticSeverityWarning
 	DiagInfo    = protocol.DiagnosticSeverityInformation
 )
-
-// requiredANSIColors defines the 16 standard terminal colors that must be present.
-var requiredANSIColors = []string{
-	"black", "red", "green", "yellow",
-	"blue", "magenta", "cyan", "white",
-	"bright_black", "bright_red", "bright_green", "bright_yellow",
-	"bright_blue", "bright_magenta", "bright_cyan", "bright_white",
-}
 
 // BlockType defines the behavior of each top-level block
 type BlockType struct {
@@ -56,7 +49,7 @@ var BlockTypes = map[string]BlockType{
 		Name:            "ansi",
 		SupportsNesting: false,
 		SelfReferencing: false,
-		StrictNames:     requiredANSIColors,
+		StrictNames:     theme.RequiredANSIColors,
 	},
 }
 
@@ -149,8 +142,8 @@ func Analyze(filename, content string) *AnalysisResult {
 	ctx := &hcl.EvalContext{
 		Variables: make(map[string]cty.Value),
 		Functions: map[string]function.Function{
-			"brighten": makeBrightenFuncAnalyzer(),
-			"darken":   makeDarkenFuncAnalyzer(),
+			"brighten": theme.MakeBrightenFunc(),
+			"darken":   theme.MakeDarkenFunc(),
 		},
 	}
 
@@ -158,13 +151,13 @@ func Analyze(filename, content string) *AnalysisResult {
 	if paletteBody, ok := blockBodies["palette"]; ok {
 		palette, _ := result.analyzeBlock(paletteBody, BlockTypes["palette"], ctx, "palette")
 		result.Palette = palette
-		ctx.Variables["palette"] = nodeToCtyAnalyzer(palette)
+		ctx.Variables["palette"] = theme.NodeToCty(palette)
 	}
 
 	// Process theme (self-referencing, can reference palette)
 	if themeBody, ok := blockBodies["theme"]; ok {
 		themeNode, _ := result.analyzeBlock(themeBody, BlockTypes["theme"], ctx, "theme")
-		ctx.Variables["theme"] = nodeToCtyAnalyzer(themeNode)
+		ctx.Variables["theme"] = theme.NodeToCty(themeNode)
 	}
 
 	// Process ansi (strict names, can reference palette/theme)
@@ -264,7 +257,7 @@ func (r *AnalysisResult) analyzePaletteBody(body *hclsyntax.Body, paletteRoot *c
 
 	for _, item := range items {
 		// Rebuild eval context with current state of palette root
-		ctx := buildAnalyzerEvalContext(paletteRoot)
+		ctx := theme.BuildEvalContext(paletteRoot)
 
 		if item.attr != nil {
 			attrName := item.attr.Name
@@ -281,7 +274,7 @@ func (r *AnalysisResult) analyzePaletteBody(body *hclsyntax.Body, paletteRoot *c
 				continue
 			}
 
-			hexStr, err := analyzerResolveColor(val)
+			hexStr, err := theme.ResolveColor(val)
 			if err != nil {
 				r.addError(item.attr.SrcRange, fmt.Sprintf("%s: %s", symbolName, err.Error()))
 				continue
@@ -339,7 +332,7 @@ func (r *AnalysisResult) analyzeColorBlock(body *hclsyntax.Body, ctx *hcl.EvalCo
 			continue
 		}
 
-		hexStr, err := analyzerResolveColor(val)
+		hexStr, err := theme.ResolveColor(val)
 		if err != nil {
 			r.addError(attr.SrcRange, fmt.Sprintf("%s.%s: %s", blockName, attr.Name, err.Error()))
 			continue
@@ -381,7 +374,7 @@ func (r *AnalysisResult) analyzeSyntaxBody(body *hclsyntax.Body, ctx *hcl.EvalCo
 			continue
 		}
 
-		hexStr, err := analyzerResolveColor(val)
+		hexStr, err := theme.ResolveColor(val)
 		if err != nil {
 			r.addError(attr.SrcRange, fmt.Sprintf("%s.%s: %s", prefix, attr.Name, err.Error()))
 			continue
@@ -411,7 +404,7 @@ func (r *AnalysisResult) analyzeSyntaxBody(body *hclsyntax.Body, ctx *hcl.EvalCo
 // and emits warning diagnostics for any missing ones.
 func (r *AnalysisResult) validateANSICompleteness(resolved map[string]bool, blockRange hcl.Range, filename string) {
 	var missing []string
-	for _, name := range requiredANSIColors {
+	for _, name := range theme.RequiredANSIColors {
 		if !resolved[name] {
 			missing = append(missing, name)
 		}
@@ -430,25 +423,6 @@ func (r *AnalysisResult) validateANSICompleteness(resolved map[string]bool, bloc
 	}
 }
 
-// analyzerResolveColor extracts a color hex string from a cty.Value.
-// If the value is a string, return it directly.
-// If the value is an object, extract the "color" key.
-func analyzerResolveColor(val cty.Value) (string, error) {
-	if val.Type() == cty.String {
-		return val.AsString(), nil
-	}
-	if val.Type().IsObjectType() {
-		if val.Type().HasAttribute("color") {
-			colorVal := val.GetAttr("color")
-			if colorVal.Type() == cty.String {
-				return colorVal.AsString(), nil
-			}
-		}
-		return "", fmt.Errorf("object has no 'color' attribute; reference a specific child or add a color attribute")
-	}
-	return "", fmt.Errorf("expected string or object with color attribute, got %s", val.Type().FriendlyName())
-}
-
 // isReferenceExpr returns true if the expression is a scope traversal
 // (e.g. palette.base) rather than a literal value.
 func isReferenceExpr(expr hclsyntax.Expression) bool {
@@ -459,97 +433,6 @@ func isReferenceExpr(expr hclsyntax.Expression) bool {
 		return true
 	default:
 		return false
-	}
-}
-
-// nodeToCtyAnalyzer converts a color.Node to a cty.Value for HCL evaluation context.
-// This is a reimplementation for the analyzer to avoid coupling to the parser package.
-func nodeToCtyAnalyzer(node *color.Node) cty.Value {
-	if node.Children == nil {
-		if node.Color != nil {
-			return cty.StringVal(node.Color.Hex())
-		}
-		return cty.EmptyObjectVal
-	}
-
-	vals := make(map[string]cty.Value, len(node.Children)+1)
-
-	if node.Color != nil {
-		vals["color"] = cty.StringVal(node.Color.Hex())
-	}
-
-	keys := make([]string, 0, len(node.Children))
-	for k := range node.Children {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		vals[k] = nodeToCtyAnalyzer(node.Children[k])
-	}
-
-	return cty.ObjectVal(vals)
-}
-
-// makeBrightenFuncAnalyzer creates an HCL function that brightens a color.
-func makeBrightenFuncAnalyzer() function.Function {
-	return function.New(&function.Spec{
-		Description: "Brightens a color by the given percentage (-1.0 to 1.0)",
-		Params: []function.Parameter{
-			{Name: "color", Type: cty.String},
-			{Name: "percentage", Type: cty.Number},
-		},
-		Type: function.StaticReturnType(cty.String),
-		Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
-			colorHex := args[0].AsString()
-			pct, _ := args[1].AsBigFloat().Float64()
-
-			c, err := color.ParseHex(colorHex)
-			if err != nil {
-				return cty.NilVal, err
-			}
-
-			brightened := color.Brighten(c, pct)
-			return cty.StringVal(brightened.Hex()), nil
-		},
-	})
-}
-
-// makeDarkenFuncAnalyzer creates an HCL function that darkens a color.
-func makeDarkenFuncAnalyzer() function.Function {
-	return function.New(&function.Spec{
-		Description: "Darkens a color by the given percentage (0.0 to 1.0)",
-		Params: []function.Parameter{
-			{Name: "color", Type: cty.String},
-			{Name: "percentage", Type: cty.Number},
-		},
-		Type: function.StaticReturnType(cty.String),
-		Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
-			colorHex := args[0].AsString()
-			pct, _ := args[1].AsBigFloat().Float64()
-
-			c, err := color.ParseHex(colorHex)
-			if err != nil {
-				return cty.NilVal, err
-			}
-
-			darkened := color.Darken(c, pct)
-			return cty.StringVal(darkened.Hex()), nil
-		},
-	})
-}
-
-// buildAnalyzerEvalContext creates an HCL evaluation context with palette variables
-// and brighten/darken functions.
-func buildAnalyzerEvalContext(palette *color.Node) *hcl.EvalContext {
-	return &hcl.EvalContext{
-		Variables: map[string]cty.Value{
-			"palette": nodeToCtyAnalyzer(palette),
-		},
-		Functions: map[string]function.Function{
-			"brighten": makeBrightenFuncAnalyzer(),
-			"darken":   makeDarkenFuncAnalyzer(),
-		},
 	}
 }
 
@@ -571,7 +454,7 @@ type BlockContext struct {
 
 // isValidANSIName checks if a name is in the list of valid ANSI colors
 func isValidANSIName(name string) bool {
-	for _, valid := range requiredANSIColors {
+	for _, valid := range theme.RequiredANSIColors {
 		if name == valid {
 			return true
 		}
@@ -709,7 +592,7 @@ func (r *AnalysisResult) processBlockAttribute(attr *hclsyntax.Attribute,
 		return
 	}
 
-	hexStr, err := analyzerResolveColor(val)
+	hexStr, err := theme.ResolveColor(val)
 	if err != nil {
 		r.addError(attr.SrcRange, fmt.Sprintf("%s: %s", symbolName, err.Error()))
 		return
@@ -777,7 +660,7 @@ func (r *AnalysisResult) buildBlockEvalContext(parentCtx *hcl.EvalContext,
 
 	// Update this block's variable
 	if node != nil {
-		newCtx.Variables[blockName] = nodeToCtyAnalyzer(node)
+		newCtx.Variables[blockName] = theme.NodeToCty(node)
 	}
 
 	return newCtx

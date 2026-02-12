@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/jsvensson/paletteswap/internal/color"
+	"github.com/jsvensson/paletteswap/internal/theme"
 	"github.com/tliron/glsp"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 )
@@ -271,7 +272,7 @@ func ansiCompletions(lines []string, cursorLine int) []protocol.CompletionItem {
 	kind := protocol.CompletionItemKindConstant
 
 	var items []protocol.CompletionItem
-	for _, name := range requiredANSIColors {
+	for _, name := range theme.RequiredANSIColors {
 		if !defined[name] {
 			items = append(items, protocol.CompletionItem{
 				Label: name,
