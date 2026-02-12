@@ -79,6 +79,7 @@ func (s *Server) initialize(_ *glsp.Context, params *protocol.InitializeParams) 
 		},
 	}
 	capabilities.DocumentFormattingProvider = true
+	capabilities.DefinitionProvider = true
 
 	return protocol.InitializeResult{
 		Capabilities: capabilities,
