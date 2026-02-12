@@ -10,6 +10,8 @@ import (
 
 	"github.com/tliron/commonlog"
 	_ "github.com/tliron/commonlog/simple"
+
+	"github.com/jsvensson/paletteswap/internal/format"
 )
 
 const serverName = "pstheme-lsp"
@@ -196,7 +198,7 @@ func (s *Server) textDocumentFormatting(_ *glsp.Context, params *protocol.Docume
 		return nil, nil
 	}
 
-	formatted, err := format(content)
+	formatted, err := format.Format(content)
 	if err != nil {
 		return nil, err
 	}
