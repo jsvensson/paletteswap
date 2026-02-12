@@ -13,8 +13,7 @@ on:
           - major
           - minor
           - patch
-  pull_request:
-    types: [closed]
+  push:
     branches: [main]
 
 permissions:
@@ -24,7 +23,7 @@ permissions:
 jobs:
   check-releasable:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     outputs:
       should-release: ${{ steps.check.outputs.should-release }}
     steps:
@@ -37,8 +36,6 @@ jobs:
         id: check
         env:
           EVENT_NAME: ${{ github.event_name }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           # For manual triggers, always release
           if [ "$EVENT_NAME" == "workflow_dispatch" ]; then
@@ -46,27 +43,20 @@ jobs:
             exit 0
           fi
 
-          # For PR merges, check the merge/squash commit message and PR info
-          # Squash/rebase merges create new commits, so we check the commit message
-          MERGE_COMMIT=$(git log -1 --format=%B)
+          # For pushes to main, check the commit message
+          COMMIT_MSG=$(git log -1 --format=%B)
 
-          echo "Merge commit message:"
-          echo "$MERGE_COMMIT"
-          echo ""
-          echo "PR Title: $PR_TITLE"
+          echo "Commit message:"
+          echo "$COMMIT_MSG"
 
-          # Combine merge commit message, PR title, and PR body for checking
-          # Squash merges include all commit messages in the body
-          COMBINED_TEXT=$(printf '%s\n%s\n%s' "$MERGE_COMMIT" "$PR_TITLE" "$PR_BODY")
-
-          # Check for releasable commit types in any of the text
-          if echo "$COMBINED_TEXT" | grep -qE '^(feat|fix|perf|refactor|build|ci)(\(.+\))?:'; then
+          # Check for releasable commit types
+          if echo "$COMMIT_MSG" | grep -qE '^(feat|fix|perf|refactor|build|ci)(\(.+\))?:'; then
             echo "should-release=true" >> "$GITHUB_OUTPUT"
             echo "Found releasable commits"
           # Also trigger for release-please PRs (they have "release" in the title)
-          elif echo "$PR_TITLE" | grep -qE '^chore\(main\): release'; then
+          elif echo "$COMMIT_MSG" | grep -qE '^chore\(main\): release'; then
             echo "should-release=true" >> "$GITHUB_OUTPUT"
-            echo "Found release-please PR"
+            echo "Found release-please PR merge"
           else
             echo "should-release=false" >> "$GITHUB_OUTPUT"
             echo "No releasable commits found (only chore/docs/test/style)"
