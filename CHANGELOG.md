@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.4](https://github.com/jsvensson/paletteswap/compare/v0.1.3...v0.1.4) (2026-02-12)
+
+
+### Features
+
+* **cli:** add fmt subcommand for formatting .pstheme files ([#58](https://github.com/jsvensson/paletteswap/issues/58)) ([87fe7dc](https://github.com/jsvensson/paletteswap/commit/87fe7dcd4181ab8fb1cf8aca79ec92f042c8665c))
+* **lsp:** collapse multiple blank lines to one when formatting ([75c7c51](https://github.com/jsvensson/paletteswap/commit/75c7c51af5f8b55d5c57248ba2e58697f5a97e84))
+* **lsp:** collapse multiple blank lines when formatting ([#56](https://github.com/jsvensson/paletteswap/issues/56)) ([75c7c51](https://github.com/jsvensson/paletteswap/commit/75c7c51af5f8b55d5c57248ba2e58697f5a97e84))
+
+
+### CI/CD
+
+* add test workflow for pull requests ([#57](https://github.com/jsvensson/paletteswap/issues/57)) ([8cfcb2a](https://github.com/jsvensson/paletteswap/commit/8cfcb2aaa2d668446f7b99a8a7ac89307be1ef4c))
+* add workflow_dispatch to release workflow ([#54](https://github.com/jsvensson/paletteswap/issues/54)) ([55cb776](https://github.com/jsvensson/paletteswap/commit/55cb77623521ad725cb6af503ca57429995499d5))
+
 ## [0.1.3](https://github.com/jsvensson/paletteswap/compare/v0.1.2...v0.1.3) (2026-02-12)
 
 
