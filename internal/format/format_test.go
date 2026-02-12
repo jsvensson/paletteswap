@@ -1,4 +1,4 @@
-package lsp
+package format
 
 import (
 	"strings"
@@ -70,9 +70,9 @@ theme { background = palette.base }`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := format(tt.input)
+			result, err := Format(tt.input)
 			if err != nil {
-				t.Fatalf("format() error = %v", err)
+				t.Fatalf("Format() error = %v", err)
 			}
 
 			// Normalize line endings for comparison
@@ -80,7 +80,7 @@ theme { background = palette.base }`,
 			expected := strings.TrimSuffix(tt.expected, "\n")
 
 			if result != expected {
-				t.Errorf("format() = %q, want %q", result, expected)
+				t.Errorf("Format() = %q, want %q", result, expected)
 			}
 		})
 	}
@@ -89,9 +89,9 @@ theme { background = palette.base }`,
 func TestFormatInvalidHCL(t *testing.T) {
 	// hclwrite.Format should handle partial/invalid HCL gracefully
 	input := `meta { name = "Test"`
-	_, err := format(input)
+	_, err := Format(input)
 	// The function should not error even on incomplete HCL
 	if err != nil {
-		t.Errorf("format() on incomplete HCL should not error, got: %v", err)
+		t.Errorf("Format() on incomplete HCL should not error, got: %v", err)
 	}
 }
