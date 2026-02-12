@@ -1,0 +1,606 @@
+meta {
+  name       = "PaletteSwap Placeholder"
+  author     = "Bob Loblaw"
+  appearance = "dark"
+  url        = ""
+}
+
+palette {
+  # Define your palette colors here
+}
+
+ansi {
+  # Define your ANSI colors here
+}
+
+theme {
+  # Core colors
+  background = ""
+  foreground = ""
+  accents    = ""
+
+  background {
+    appearance = ""
+  }
+
+  # Text styles
+  text {
+    base        = ""
+    muted       = ""
+    placeholder = ""
+    disabled    = ""
+    accent      = ""
+  }
+
+  # Borders
+  border {
+    base        = ""
+    variant     = ""
+    focused     = ""
+    selected    = ""
+    transparent = ""
+    disabled    = ""
+  }
+
+  # Surface elements
+  surface {
+    background = ""
+  }
+
+  elevated_surface {
+    background = ""
+  }
+
+  # Interactive elements
+  element {
+    background = ""
+    hover      = ""
+    active     = ""
+    selected   = ""
+    disabled   = ""
+  }
+
+  ghost_element {
+    background = ""
+    hover      = ""
+    active     = ""
+    selected   = ""
+    disabled   = ""
+  }
+
+  drop_target {
+    background = ""
+  }
+
+  # Icons
+  icon {
+    base        = ""
+    muted       = ""
+    disabled    = ""
+    placeholder = ""
+    accent      = ""
+  }
+
+  # Editor
+  editor {
+    foreground = ""
+    background = ""
+
+    gutter {
+      background = ""
+    }
+
+    subheader {
+      background = ""
+    }
+
+    active_line {
+      background = ""
+    }
+
+    highlighted_line {
+      background = ""
+    }
+
+    line_number        = ""
+    active_line_number = ""
+    invisible          = ""
+    wrap_guide         = ""
+    active_wrap_guide  = ""
+    indent_guide       = ""
+    indent_guide_active = ""
+
+    document_highlight {
+      bracket_background = ""
+      read_background    = ""
+      write_background   = ""
+    }
+
+    debugger_active_line {
+      background = ""
+    }
+  }
+
+  # Panels
+  panel {
+    background       = ""
+    focused_border   = ""
+    overlay_background = ""
+    indent_guide     = ""
+    indent_guide_active = ""
+    indent_guide_hover  = ""
+  }
+
+  pane {
+    focused_border = ""
+  }
+
+  pane_group {
+    border = ""
+  }
+
+  # Tabs
+  tab_bar {
+    background = ""
+  }
+
+  tab {
+    inactive_background = ""
+    active_background   = ""
+  }
+
+  # Toolbars
+  toolbar {
+    background = ""
+  }
+
+  # Window chrome
+  status_bar {
+    background = ""
+  }
+
+  title_bar {
+    background          = ""
+    inactive_background = ""
+  }
+
+  # Scrollbar
+  scrollbar {
+    thumb {
+      background        = ""
+      hover_background  = ""
+      active_background = ""
+      border            = ""
+    }
+
+    track {
+      background = ""
+      border     = ""
+    }
+  }
+
+  # Minimap
+  minimap {
+    thumb {
+      background        = ""
+      hover_background  = ""
+      active_background = ""
+      border            = ""
+    }
+  }
+
+  # Search
+  search {
+    match_background        = ""
+    active_match_background = ""
+  }
+
+  # Terminal
+  terminal {
+    background        = ""
+    foreground        = ""
+    bright_foreground = ""
+    dim_foreground    = ""
+
+    ansi {
+      background = ""
+
+      # TODO: Keep the ANSI colors redeclared here?
+      # These syntax names are imported from the Zed format.
+      black   = ansi.black
+      red     = ansi.red
+      green   = ansi.green
+      yellow  = ansi.yellow
+      blue    = ansi.blue
+      magenta = ansi.magenta
+      cyan    = ansi.cyan
+      white   = ansi.white
+
+      bright_black   ansi.bright_black
+      bright_red     = ansi.bright_red
+      bright_green   = ansi.bright_green
+      bright_yellow  = ansi.bright_yellow
+      bright_blue    = ansi.bright_blue
+      bright_magenta = ansi.bright_magenta
+      bright_cyan    = ansi.bright_cyan
+      bright_white   = ansi.bright_white
+
+      dim_black   = ""
+      dim_red     = ""
+      dim_green   = ""
+      dim_yellow  = ""
+      dim_blue    = ""
+      dim_magenta = ""
+      dim_cyan    = ""
+      dim_white   = ""
+    }
+  }
+
+  # Links
+  link_text {
+    hover = ""
+  }
+
+  # Status indicators
+  conflict {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  created {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  deleted {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  hidden {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  hint {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  ignored {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  modified {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  predictive {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  renamed {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  info {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  warning {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  error {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  success {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  unreachable {
+    base       = ""
+    border     = ""
+    background = ""
+  }
+
+  # Players (multiplayer cursors)
+  players = ""
+
+  # Version control
+  version_control {
+    added    = ""
+    deleted  = ""
+    modified = ""
+    renamed  = ""
+    conflict = ""
+    ignored  = ""
+
+    conflict_marker {
+      ours   = ""
+      theirs = ""
+    }
+  }
+
+  # VIM mode indicators
+  vim {
+    mode {
+      text = ""
+    }
+
+    normal {
+      foreground = ""
+      background = ""
+    }
+
+    helix_normal {
+      foreground = ""
+      background = ""
+    }
+
+    visual {
+      foreground = ""
+      background = ""
+    }
+
+    helix_select {
+      foreground = ""
+      background = ""
+    }
+
+    insert {
+      foreground = ""
+      background = ""
+    }
+
+    visual_line {
+      foreground = ""
+      background = ""
+    }
+
+    visual_block {
+      foreground = ""
+      background = ""
+    }
+
+    replace {
+      foreground = ""
+      background = ""
+    }
+  }
+
+  # Debugger
+  debugger {
+    accent = ""
+  }
+}
+
+syntax {
+  # Variables
+  variable {
+    base      = ""
+    builtin   = ""
+    parameter = ""
+    member    = ""
+    special   = ""
+  }
+
+  # Constants
+  constant {
+    base    = ""
+    builtin = ""
+    macro   = ""
+  }
+
+  boolean = ""
+
+  # Modules and namespaces
+  module    = ""
+  namespace = ""
+  label     = ""
+
+  # Strings
+  string {
+    base          = ""
+    documentation = ""
+    regexp        = ""
+    escape        = ""
+    doc           = ""
+    regex         = ""
+
+    special {
+      base   = ""
+      path   = ""
+      symbol = ""
+      url    = ""
+    }
+  }
+
+  # Characters
+  character {
+    base    = ""
+    special = ""
+  }
+
+  # Numbers
+  number {
+    base  = ""
+    float = ""
+  }
+
+  float = ""
+
+  # Types
+  type {
+    base       = ""
+    builtin    = ""
+    definition = ""
+    interface  = ""
+    super      = ""
+
+    class {
+      definition = ""
+    }
+  }
+
+  enum = ""
+
+  # Tags (HTML/XML)
+  tag {
+    base      = ""
+    attribute = ""
+    delimiter = ""
+    doctype   = ""
+  }
+
+  # Attributes and properties
+  attribute = ""
+  property  = ""
+  field     = ""
+  parameter = ""
+
+  # Functions
+  function {
+    base      = ""
+    builtin   = ""
+    call      = ""
+    macro     = ""
+    method    = ""
+    decorator = ""
+
+    method_call = ""
+  }
+
+  constructor = ""
+
+  # Operators
+  operator = ""
+
+  # Keywords
+  keyword {
+    base        = ""
+    modifier    = ""
+    type        = ""
+    coroutine   = ""
+    function    = ""
+    operator    = ""
+    import      = ""
+    repeat      = ""
+    return      = ""
+    debug       = ""
+    exception   = ""
+    conditional = ""
+    directive   = ""
+    export      = ""
+
+    conditional {
+      ternary = ""
+    }
+
+    directive {
+      define = ""
+    }
+  }
+
+  # Punctuation
+  punctuation {
+    base        = ""
+    delimiter   = ""
+    bracket     = ""
+    special     = ""
+    list_marker = ""
+
+    special {
+      symbol = ""
+    }
+  }
+
+  # Comments
+  comment {
+    base          = ""
+    doc           = ""
+    documentation = ""
+    info          = ""
+    error         = ""
+    warning       = ""
+    warn          = ""
+    hint          = ""
+    todo          = ""
+    note          = ""
+  }
+
+  # Diff
+  diff {
+    plus  = ""
+    minus = ""
+  }
+
+  # Emphasis (markdown)
+  emphasis {
+    base   = ""
+    strong = ""
+  }
+
+  # Markup
+  markup {
+    heading = ""
+    code    = ""
+
+    bold {
+      color = ""
+      bold  = true
+    }
+
+    italic {
+      color  = ""
+      italic = true
+    }
+
+    link {
+      color     = ""
+      underline = true
+    }
+  }
+
+  # Text and literals
+  text {
+    base    = ""
+    literal = ""
+  }
+
+  # Misc
+  embedded    = ""
+  concept     = ""
+  symbol      = ""
+  title       = ""
+  variant     = ""
+  hint        = ""
+  link_text   = ""
+  link_uri    = ""
+  parent      = ""
+  predictive  = ""
+  predoc      = ""
+  primary     = ""
+}
