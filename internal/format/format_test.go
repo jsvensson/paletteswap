@@ -66,6 +66,26 @@ theme { background = palette.base }`,
 			input: "meta { name = \"Test\" }\n\npalette { base = \"#191724\" }",
 			expected: "meta { name = \"Test\" }\n\npalette { base = \"#191724\" }",
 		},
+		{
+			name: "blank line after opening brace removed",
+			input: "palette {\n\n  base = \"#191724\"\n}",
+			expected: "palette {\n  base = \"#191724\"\n}",
+		},
+		{
+			name: "blank line before closing brace removed",
+			input: "palette {\n  base = \"#191724\"\n\n}",
+			expected: "palette {\n  base = \"#191724\"\n}",
+		},
+		{
+			name: "blank lines after and before braces both removed",
+			input: "palette {\n\n  base = \"#191724\"\n\n}",
+			expected: "palette {\n  base = \"#191724\"\n}",
+		},
+		{
+			name: "nested block blank lines removed",
+			input: "palette {\n\n  highlight {\n\n    low = \"#21202e\"\n\n  }\n\n}",
+			expected: "palette {\n  highlight {\n    low = \"#21202e\"\n  }\n}",
+		},
 	}
 
 	for _, tt := range tests {
