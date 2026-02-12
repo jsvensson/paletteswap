@@ -50,8 +50,8 @@ jobs:
           echo "Commit message:"
           echo "$COMMIT_MSG"
 
-          # Check for releasable commit types
-          if echo "$COMMIT_MSG" | grep -qE '^(feat|fix|perf|refactor|build|ci)(\(.+\))?:'; then
+          # Check for releasable commit types (excluding ci: since CI changes don't need releases)
+          if echo "$COMMIT_MSG" | grep -qE '^(feat|fix|perf|refactor|build)(\(.+\))?:'; then
             echo "should-release=true" >> "$GITHUB_OUTPUT"
             echo "Found releasable commits"
           # Also trigger for release-please PRs (they have "release" in the title)
