@@ -51,6 +51,21 @@ theme{background=palette.base}`,
 palette { base = "#191724" }
 theme { background = palette.base }`,
 		},
+		{
+			name: "multiple blank lines collapsed to one",
+			input: "meta { name = \"Test\" }\n\n\n\npalette { base = \"#191724\" }",
+			expected: "meta { name = \"Test\" }\n\npalette { base = \"#191724\" }",
+		},
+		{
+			name: "many blank lines collapsed to one",
+			input: "meta { name = \"Test\" }\n\n\n\n\n\n\npalette { base = \"#191724\" }",
+			expected: "meta { name = \"Test\" }\n\npalette { base = \"#191724\" }",
+		},
+		{
+			name: "single blank line preserved",
+			input: "meta { name = \"Test\" }\n\npalette { base = \"#191724\" }",
+			expected: "meta { name = \"Test\" }\n\npalette { base = \"#191724\" }",
+		},
 	}
 
 	for _, tt := range tests {
