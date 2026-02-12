@@ -23,6 +23,22 @@ builds:
       - amd64
       - arm64
 
+  - id: pstheme-lsp
+    main: ./cmd/pstheme-lsp
+    binary: pstheme-lsp
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
 archives:
   - id: paletteswap
     name_template: >-
