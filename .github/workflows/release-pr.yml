@@ -63,6 +63,10 @@ jobs:
           if echo "$COMBINED_TEXT" | grep -qE '^(feat|fix|perf|refactor|build|ci)(\(.+\))?:'; then
             echo "should-release=true" >> "$GITHUB_OUTPUT"
             echo "Found releasable commits"
+          # Also trigger for release-please PRs (they have "release" in the title)
+          elif echo "$PR_TITLE" | grep -qE '^chore\(main\): release'; then
+            echo "should-release=true" >> "$GITHUB_OUTPUT"
+            echo "Found release-please PR"
           else
             echo "should-release=false" >> "$GITHUB_OUTPUT"
             echo "No releasable commits found (only chore/docs/test/style)"
