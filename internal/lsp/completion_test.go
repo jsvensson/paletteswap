@@ -272,14 +272,21 @@ ansi {
 	}
 
 	// Should include highlight children: low, high
-	// "color" is the node's own color, not a child to complete as "palette.highlight.color"
-	// but it IS stored as a key; the implementation may or may not include it.
-	// We definitely expect low and high.
 	if !hasLabel(items, "low") {
 		t.Error("expected completion item 'low'")
 	}
 	if !hasLabel(items, "high") {
 		t.Error("expected completion item 'high'")
+	}
+
+	// "color" is a reserved keyword — it must NOT be suggested as a completion
+	if hasLabel(items, "color") {
+		t.Error("should not suggest reserved keyword 'color' as palette completion")
+	}
+
+	// Exactly two items expected: low, high
+	if len(items) != 2 {
+		t.Errorf("expected exactly 2 completion items, got %d: %v", len(items), completionLabels(items))
 	}
 }
 
@@ -700,5 +707,10 @@ ansi {
 	}
 	if !hasLabel(items, "high") {
 		t.Error("expected completion item 'high' for palette.highlight.")
+	}
+
+	// "color" is a reserved keyword — it must NOT be suggested
+	if hasLabel(items, "color") {
+		t.Error("should not suggest reserved keyword 'color' as palette completion")
 	}
 }
