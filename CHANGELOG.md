@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.5](https://github.com/jsvensson/paletteswap/compare/v0.1.4...v0.1.5) (2026-02-13)
+
+
+### Features
+
+* **format:** remove blank lines adjacent to curly braces ([#64](https://github.com/jsvensson/paletteswap/issues/64)) ([#65](https://github.com/jsvensson/paletteswap/issues/65)) ([0898d7d](https://github.com/jsvensson/paletteswap/commit/0898d7d239657d7f4bf1683745f4d70825dc7e18))
+* **format:** reorder ANSI block to canonical color order ([#66](https://github.com/jsvensson/paletteswap/issues/66)) ([b536058](https://github.com/jsvensson/paletteswap/commit/b536058e960fdd9ccae9aeb7267aac277967cc12))
+
+
+### Code Refactoring
+
+* extract shared HCL eval helpers into internal/theme ([#60](https://github.com/jsvensson/paletteswap/issues/60)) ([66baeca](https://github.com/jsvensson/paletteswap/commit/66baeca35fae99ca212753292a31cd5411984031))
+
+
+### CI/CD
+
+* set up dependabot ([#63](https://github.com/jsvensson/paletteswap/issues/63)) ([b6aec78](https://github.com/jsvensson/paletteswap/commit/b6aec78084189a8ed5c6e95f893dbe034ad90970))
+
 ## [0.1.4](https://github.com/jsvensson/paletteswap/compare/v0.1.3...v0.1.4) (2026-02-12)
 
 
