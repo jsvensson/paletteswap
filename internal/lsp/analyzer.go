@@ -616,11 +616,16 @@ func (r *AnalysisResult) processBlockAttribute(attr *hclsyntax.Attribute,
 	ctx.Symbols[symbolName] = hclRangeToLSP(attr.SrcRange)
 	r.Symbols[symbolName] = hclRangeToLSP(attr.SrcRange)
 
-	// Update node tree
-	if ctx.Node.Children == nil {
-		ctx.Node.Children = make(map[string]*color.Node)
+	// Update node tree — "color" is a reserved keyword that sets the node's
+	// own color rather than creating a child entry.
+	if attr.Name == "color" && ctx.BlockType.SupportsNesting {
+		ctx.Node.Color = &c
+	} else {
+		if ctx.Node.Children == nil {
+			ctx.Node.Children = make(map[string]*color.Node)
+		}
+		ctx.Node.Children[attr.Name] = &color.Node{Color: &c}
 	}
-	ctx.Node.Children[attr.Name] = &color.Node{Color: &c}
 
 	resolved[attr.Name] = true
 }
