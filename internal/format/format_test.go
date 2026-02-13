@@ -86,6 +86,199 @@ theme { background = palette.base }`,
 			input: "palette {\n\n  highlight {\n\n    low = \"#21202e\"\n\n  }\n\n}",
 			expected: "palette {\n  highlight {\n    low = \"#21202e\"\n  }\n}",
 		},
+		{
+			name: "ansi block already in order stays same",
+			input: `ansi {
+  black          = palette.overlay
+  red            = palette.love
+  green          = palette.pine
+  yellow         = palette.gold
+  blue           = palette.foam
+  magenta        = palette.iris
+  cyan           = palette.foam
+  white          = palette.text
+  bright_black   = palette.muted
+  bright_red     = palette.love
+  bright_green   = palette.pine
+  bright_yellow  = palette.gold
+  bright_blue    = palette.foam
+  bright_magenta = palette.iris
+  bright_cyan    = palette.foam
+  bright_white   = palette.text
+}
+`,
+			expected: `ansi {
+  black          = palette.overlay
+  red            = palette.love
+  green          = palette.pine
+  yellow         = palette.gold
+  blue           = palette.foam
+  magenta        = palette.iris
+  cyan           = palette.foam
+  white          = palette.text
+  bright_black   = palette.muted
+  bright_red     = palette.love
+  bright_green   = palette.pine
+  bright_yellow  = palette.gold
+  bright_blue    = palette.foam
+  bright_magenta = palette.iris
+  bright_cyan    = palette.foam
+  bright_white   = palette.text
+}
+`,
+		},
+		{
+			name: "ansi block misordered gets reordered",
+			input: `ansi {
+  white          = palette.text
+  bright_cyan    = palette.foam
+  red            = palette.love
+  bright_black   = palette.muted
+  green          = palette.pine
+  magenta        = palette.iris
+  bright_white   = palette.text
+  yellow         = palette.gold
+  blue           = palette.foam
+  bright_red     = palette.love
+  black          = palette.overlay
+  cyan           = palette.foam
+  bright_green   = palette.pine
+  bright_yellow  = palette.gold
+  bright_blue    = palette.foam
+  bright_magenta = palette.iris
+}
+`,
+			expected: `ansi {
+  black          = palette.overlay
+  red            = palette.love
+  green          = palette.pine
+  yellow         = palette.gold
+  blue           = palette.foam
+  magenta        = palette.iris
+  cyan           = palette.foam
+  white          = palette.text
+  bright_black   = palette.muted
+  bright_red     = palette.love
+  bright_green   = palette.pine
+  bright_yellow  = palette.gold
+  bright_blue    = palette.foam
+  bright_magenta = palette.iris
+  bright_cyan    = palette.foam
+  bright_white   = palette.text
+}
+`,
+		},
+		{
+			name: "ansi block comments travel with their attribute",
+			input: `ansi {
+  white          = palette.text
+  red            = palette.love
+  # bright colors
+  bright_black   = palette.muted
+  black          = palette.overlay
+  green          = palette.pine
+  yellow         = palette.gold
+  blue           = palette.foam
+  magenta        = palette.iris
+  cyan           = palette.foam
+  bright_red     = palette.love
+  bright_green   = palette.pine
+  bright_yellow  = palette.gold
+  bright_blue    = palette.foam
+  bright_magenta = palette.iris
+  bright_cyan    = palette.foam
+  bright_white   = palette.text
+}
+`,
+			expected: `ansi {
+  black          = palette.overlay
+  red            = palette.love
+  green          = palette.pine
+  yellow         = palette.gold
+  blue           = palette.foam
+  magenta        = palette.iris
+  cyan           = palette.foam
+  white          = palette.text
+  # bright colors
+  bright_black   = palette.muted
+  bright_red     = palette.love
+  bright_green   = palette.pine
+  bright_yellow  = palette.gold
+  bright_blue    = palette.foam
+  bright_magenta = palette.iris
+  bright_cyan    = palette.foam
+  bright_white   = palette.text
+}
+`,
+		},
+		{
+			name: "ansi block inline comments preserved",
+			input: `ansi {
+  white          = palette.text # foreground
+  red            = palette.love
+  black          = palette.overlay # background
+  green          = palette.pine
+  yellow         = palette.gold
+  blue           = palette.foam
+  magenta        = palette.iris
+  cyan           = palette.foam
+  bright_black   = palette.muted
+  bright_red     = palette.love
+  bright_green   = palette.pine
+  bright_yellow  = palette.gold
+  bright_blue    = palette.foam
+  bright_magenta = palette.iris
+  bright_cyan    = palette.foam
+  bright_white   = palette.text
+}
+`,
+			expected: `ansi {
+  black          = palette.overlay # background
+  red            = palette.love
+  green          = palette.pine
+  yellow         = palette.gold
+  blue           = palette.foam
+  magenta        = palette.iris
+  cyan           = palette.foam
+  white          = palette.text # foreground
+  bright_black   = palette.muted
+  bright_red     = palette.love
+  bright_green   = palette.pine
+  bright_yellow  = palette.gold
+  bright_blue    = palette.foam
+  bright_magenta = palette.iris
+  bright_cyan    = palette.foam
+  bright_white   = palette.text
+}
+`,
+		},
+		{
+			name: "no ansi block unchanged",
+			input: `meta {
+  name = "Test"
+}
+
+palette {
+  base = "#191724"
+}
+
+theme {
+  background = palette.base
+}
+`,
+			expected: `meta {
+  name = "Test"
+}
+
+palette {
+  base = "#191724"
+}
+
+theme {
+  background = palette.base
+}
+`,
+		},
 	}
 
 	for _, tt := range tests {
