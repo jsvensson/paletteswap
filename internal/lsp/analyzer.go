@@ -436,6 +436,27 @@ func isReferenceExpr(expr hclsyntax.Expression) bool {
 	}
 }
 
+// checkExplicitPaletteColor warns when an expression explicitly references .color
+// on a palette path, since the color is implicit on the parent node.
+func (r *AnalysisResult) checkExplicitPaletteColor(expr hclsyntax.Expression) {
+	st, ok := expr.(*hclsyntax.ScopeTraversalExpr)
+	if !ok || len(st.Traversal) < 3 {
+		return
+	}
+
+	root, ok := st.Traversal[0].(hcl.TraverseRoot)
+	if !ok || root.Name != "palette" {
+		return
+	}
+
+	last, ok := st.Traversal[len(st.Traversal)-1].(hcl.TraverseAttr)
+	if !ok || last.Name != "color" {
+		return
+	}
+
+	r.addWarning(last.SrcRange, "color is implicit; use palette path without .color")
+}
+
 // blockItem represents an attribute or block in source order.
 type blockItem struct {
 	pos   hcl.Pos
@@ -611,6 +632,9 @@ func (r *AnalysisResult) processBlockAttribute(attr *hclsyntax.Attribute,
 		Color: c,
 		IsRef: isRef,
 	})
+
+	// Warn when explicitly referencing .color on a palette path — the color is implicit
+	r.checkExplicitPaletteColor(attr.Expr)
 
 	// Store symbol
 	ctx.Symbols[symbolName] = hclRangeToLSP(attr.SrcRange)
