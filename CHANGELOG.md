@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.6](https://github.com/jsvensson/paletteswap/compare/v0.1.5...v0.1.6) (2026-02-13)
+
+
+### Features
+
+* **lsp:** warn when explicitly referencing .color on palette paths ([#69](https://github.com/jsvensson/paletteswap/issues/69)) ([b2e483a](https://github.com/jsvensson/paletteswap/commit/b2e483af87f46d7fe25f35bc271f10fb732c0455))
+
+
+### Bug Fixes
+
+* **lsp:** exclude reserved 'color' keyword from palette completions ([#68](https://github.com/jsvensson/paletteswap/issues/68)) ([e162beb](https://github.com/jsvensson/paletteswap/commit/e162beb1dfc9e2fdbccff52ad829404c3117cbff)), closes [#67](https://github.com/jsvensson/paletteswap/issues/67)
+
 ## [0.1.5](https://github.com/jsvensson/paletteswap/compare/v0.1.4...v0.1.5) (2026-02-13)
 
 
