@@ -431,3 +431,67 @@ ansi {
 		t.Error("expected at least one literal color location (IsRef=false)")
 	}
 }
+
+func TestAnalyze_ExplicitPaletteColorWarning(t *testing.T) {
+	content := `
+palette {
+  base = "#191724"
+  highlight {
+    color = "#524f67"
+    low   = "#21202e"
+    high  = "#6e6a86"
+  }
+}
+
+theme {
+  cursor     = palette.highlight.color
+  background = palette.highlight.low
+}
+
+ansi {
+  black   = "#000000"
+  red     = "#ff0000"
+  green   = "#00ff00"
+  yellow  = "#ffff00"
+  blue    = "#0000ff"
+  magenta = "#ff00ff"
+  cyan    = "#00ffff"
+  white   = "#ffffff"
+  bright_black   = "#808080"
+  bright_red     = "#ff8080"
+  bright_green   = "#80ff80"
+  bright_yellow  = "#ffff80"
+  bright_blue    = "#8080ff"
+  bright_magenta = "#ff80ff"
+  bright_cyan    = "#80ffff"
+  bright_white   = "#ffffff"
+}
+`
+	result := Analyze("test.pstheme", content)
+
+	// Should have a warning for palette.highlight.color (implicit, no need for .color)
+	foundWarning := false
+	for _, d := range result.Diagnostics {
+		if d.Severity != nil && *d.Severity == protocol.DiagnosticSeverityWarning {
+			if strings.Contains(d.Message, "implicit") {
+				foundWarning = true
+				break
+			}
+		}
+	}
+	if !foundWarning {
+		t.Error("expected warning diagnostic for explicit .color reference")
+		for _, d := range result.Diagnostics {
+			t.Logf("  diagnostic: [%v] %s", *d.Severity, d.Message)
+		}
+	}
+
+	// Should NOT warn for palette.highlight.low (normal child reference)
+	for _, d := range result.Diagnostics {
+		if d.Severity != nil && *d.Severity == protocol.DiagnosticSeverityWarning {
+			if strings.Contains(d.Message, "low") {
+				t.Error("should not warn for normal palette child reference 'low'")
+			}
+		}
+	}
+}
