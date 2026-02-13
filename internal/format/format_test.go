@@ -253,6 +253,49 @@ theme { background = palette.base }`,
 `,
 		},
 		{
+			name: "ansi block comment containing equals sign",
+			input: `ansi {
+  # black = used for background
+  white          = palette.text
+  black          = palette.overlay
+  red            = palette.love
+  green          = palette.pine
+  yellow         = palette.gold
+  blue           = palette.foam
+  magenta        = palette.iris
+  cyan           = palette.foam
+  bright_black   = palette.muted
+  bright_red     = palette.love
+  bright_green   = palette.pine
+  bright_yellow  = palette.gold
+  bright_blue    = palette.foam
+  bright_magenta = palette.iris
+  bright_cyan    = palette.foam
+  bright_white   = palette.text
+}
+`,
+			expected: `ansi {
+  black          = palette.overlay
+  red            = palette.love
+  green          = palette.pine
+  yellow         = palette.gold
+  blue           = palette.foam
+  magenta        = palette.iris
+  cyan           = palette.foam
+  # black = used for background
+  white          = palette.text
+  bright_black   = palette.muted
+  bright_red     = palette.love
+  bright_green   = palette.pine
+  bright_yellow  = palette.gold
+  bright_blue    = palette.foam
+  bright_magenta = palette.iris
+  bright_cyan    = palette.foam
+  bright_white   = palette.text
+}
+`,
+		},
+		{
 			name: "no ansi block unchanged",
 			input: `meta {
   name = "Test"
