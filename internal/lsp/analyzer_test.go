@@ -432,6 +432,75 @@ ansi {
 	}
 }
 
+func TestAnalyze_NestedPaletteSelfReference(t *testing.T) {
+	// Regression: darken(palette.highlight.mid, 0.2) inside the highlight block
+	// failed with "This object does not have an attribute named 'highlight'"
+	// because buildBlockEvalContext used the nested prefix ("palette.highlight")
+	// as the variable key instead of updating the root "palette" variable.
+	content := `
+palette {
+  black = "#000000"
+  white = "#ffffff"
+  gray  = "#c0c0c0"
+
+  highlight {
+    mid  = "#403d52"
+    low  = darken(palette.highlight.mid, 0.2)
+    high = brighten(palette.highlight.mid, 0.2)
+    color = palette.gray
+  }
+}
+
+ansi {
+  black   = "#000000"
+  red     = "#ff0000"
+  green   = "#00ff00"
+  yellow  = "#ffff00"
+  blue    = "#0000ff"
+  magenta = "#ff00ff"
+  cyan    = "#00ffff"
+  white   = "#ffffff"
+  bright_black   = "#808080"
+  bright_red     = "#ff8080"
+  bright_green   = "#80ff80"
+  bright_yellow  = "#ffff80"
+  bright_blue    = "#8080ff"
+  bright_magenta = "#ff80ff"
+  bright_cyan    = "#80ffff"
+  bright_white   = "#ffffff"
+}
+`
+	result := Analyze("test.pstheme", content)
+
+	// Should produce no error diagnostics
+	for _, d := range result.Diagnostics {
+		if d.Severity != nil && *d.Severity == protocol.DiagnosticSeverityError {
+			t.Errorf("unexpected error: %s", d.Message)
+		}
+	}
+
+	// Verify the nested palette was fully resolved
+	if result.Palette == nil {
+		t.Fatal("expected non-nil palette")
+	}
+	highlight, ok := result.Palette.Children["highlight"]
+	if !ok {
+		t.Fatal("expected 'highlight' in palette children")
+	}
+	if _, ok := highlight.Children["mid"]; !ok {
+		t.Error("expected 'mid' in highlight children")
+	}
+	if _, ok := highlight.Children["low"]; !ok {
+		t.Error("expected 'low' in highlight children")
+	}
+	if _, ok := highlight.Children["high"]; !ok {
+		t.Error("expected 'high' in highlight children")
+	}
+	if highlight.Color == nil {
+		t.Error("expected highlight to have its own color (from 'color = palette.gray')")
+	}
+}
+
 func TestAnalyze_ExplicitPaletteColorWarning(t *testing.T) {
 	content := `
 palette {
