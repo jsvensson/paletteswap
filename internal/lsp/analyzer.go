@@ -149,26 +149,26 @@ func Analyze(filename, content string) *AnalysisResult {
 
 	// Process palette first (required and may be referenced by others)
 	if paletteBody, ok := blockBodies["palette"]; ok {
-		palette, _ := result.analyzeBlock(paletteBody, BlockTypes["palette"], ctx, "palette")
+		palette, _ := result.analyzeBlock(paletteBody, BlockTypes["palette"], ctx, "palette", nil)
 		result.Palette = palette
 		ctx.Variables["palette"] = theme.NodeToCty(palette)
 	}
 
 	// Process theme (self-referencing, can reference palette)
 	if themeBody, ok := blockBodies["theme"]; ok {
-		themeNode, _ := result.analyzeBlock(themeBody, BlockTypes["theme"], ctx, "theme")
+		themeNode, _ := result.analyzeBlock(themeBody, BlockTypes["theme"], ctx, "theme", nil)
 		ctx.Variables["theme"] = theme.NodeToCty(themeNode)
 	}
 
 	// Process ansi (strict names, can reference palette/theme)
 	if ansiBody, ok := blockBodies["ansi"]; ok {
-		_, ansiResolved := result.analyzeBlock(ansiBody, BlockTypes["ansi"], ctx, "ansi")
+		_, ansiResolved := result.analyzeBlock(ansiBody, BlockTypes["ansi"], ctx, "ansi", nil)
 		result.validateANSICompleteness(ansiResolved, blockRanges["ansi"], filename)
 	}
 
 	// Process syntax (self-referencing, can reference all others)
 	if syntaxBody, ok := blockBodies["syntax"]; ok {
-		_, _ = result.analyzeBlock(syntaxBody, BlockTypes["syntax"], ctx, "syntax")
+		_, _ = result.analyzeBlock(syntaxBody, BlockTypes["syntax"], ctx, "syntax", nil)
 	}
 
 	return result
@@ -464,11 +464,22 @@ type blockItem struct {
 	block *hclsyntax.Block
 }
 
+// blockNesting carries context for nested block analysis. When non-nil,
+// it tells analyzeBlock to populate TargetNode (pre-attached to the parent
+// tree) and to update RootName/RootNode when rebuilding the eval context.
+type blockNesting struct {
+	RootName   string      // Top-level variable name (e.g. "palette")
+	RootNode   *color.Node // Top-level node for the block type
+	TargetNode *color.Node // Pre-attached child node to populate in place
+}
+
 // BlockContext holds the state for a block being analyzed
 type BlockContext struct {
 	Name      string
 	BlockType BlockType
 	Node      *color.Node // For building color tree
+	RootName  string      // Root-level variable name (e.g. "palette")
+	RootNode  *color.Node // Root-level node for the block type
 	Symbols   map[string]protocol.Range
 	Items     []blockItem
 }
@@ -517,14 +528,34 @@ func (r *AnalysisResult) hasCircularReference(expr hclsyntax.Expression, current
 	return false
 }
 
-// analyzeBlock processes any block type with unified logic
+// analyzeBlock processes any block type with unified logic.
+// Pass nil for nesting on top-level calls; root context will be derived from prefix.
 func (r *AnalysisResult) analyzeBlock(body *hclsyntax.Body, blockType BlockType,
-	parentCtx *hcl.EvalContext, prefix string) (*color.Node, map[string]bool) {
+	parentCtx *hcl.EvalContext, prefix string, nesting *blockNesting) (*color.Node, map[string]bool) {
+
+	var node *color.Node
+	var rootName string
+	var rootNode *color.Node
+
+	if nesting != nil {
+		// Nested call: populate the pre-attached target node and use
+		// the provided root so self-references resolve from the top level.
+		node = nesting.TargetNode
+		rootName = nesting.RootName
+		rootNode = nesting.RootNode
+	} else {
+		// Top-level call: this node IS the root.
+		node = &color.Node{}
+		rootName = prefix
+		rootNode = node
+	}
 
 	ctx := &BlockContext{
 		Name:      blockType.Name,
 		BlockType: blockType,
-		Node:      &color.Node{},
+		Node:      node,
+		RootName:  rootName,
+		RootNode:  rootNode,
 		Symbols:   make(map[string]protocol.Range),
 		Items:     []blockItem{},
 	}
@@ -566,9 +597,10 @@ func (r *AnalysisResult) analyzeBlock(body *hclsyntax.Body, blockType BlockType,
 	currentCtx := parentCtx
 
 	for _, item := range ctx.Items {
-		// Rebuild context after each item for self-referencing blocks
+		// Rebuild context after each item for self-referencing blocks.
+		// Always update the root-level variable so nested references resolve.
 		if blockType.SelfReferencing {
-			currentCtx = r.buildBlockEvalContext(currentCtx, prefix, ctx.Node)
+			currentCtx = r.buildBlockEvalContext(currentCtx, ctx.RootName, ctx.RootNode)
 		}
 
 		if item.attr != nil {
@@ -664,14 +696,23 @@ func (r *AnalysisResult) processBlockNestedBlock(block *hclsyntax.Block,
 	ctx.Symbols[childPrefix] = hclRangeToLSP(block.DefRange())
 	r.Symbols[childPrefix] = hclRangeToLSP(block.DefRange())
 
-	// Recursively analyze nested block with same block type
-	childNode, _ := r.analyzeBlock(block.Body, ctx.BlockType, evalCtx, childPrefix)
-
-	// Add to parent node
+	// Pre-attach child node to parent so the root tree includes it
+	// during recursive analysis. This allows self-references like
+	// palette.highlight.mid to resolve when building the eval context.
 	if ctx.Node.Children == nil {
 		ctx.Node.Children = make(map[string]*color.Node)
 	}
+	childNode := &color.Node{}
 	ctx.Node.Children[block.Type] = childNode
+
+	// Recursively analyze nested block, using the pre-attached childNode
+	// and threading root context so buildBlockEvalContext updates the
+	// root-level variable.
+	r.analyzeBlock(block.Body, ctx.BlockType, evalCtx, childPrefix, &blockNesting{
+		RootName:   ctx.RootName,
+		RootNode:   ctx.RootNode,
+		TargetNode: childNode,
+	})
 }
 
 // buildBlockEvalContext rebuilds eval context with current block state
