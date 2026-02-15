@@ -783,6 +783,115 @@ theme {
 	}
 }
 
+func TestPaletteTransformLightness(t *testing.T) {
+	hcl := `
+palette {
+  base = "#808080"
+
+  transform {
+    lightness {
+      range = [0.4, 0.8]
+      steps = 3
+    }
+  }
+}
+
+theme {
+  background = palette.base
+  step1      = palette.base.l1
+  step2      = palette.base.l2
+  step3      = palette.base.l3
+}
+` + completeANSI
+	path := writeTempHCL(t, hcl)
+	theme, err := Parse(path)
+	if err != nil {
+		t.Fatalf("Parse() error: %v", err)
+	}
+
+	// Original color still accessible
+	bg := theme.Theme["background"]
+	if bg.Hex() != "#808080" {
+		t.Errorf("Theme[background].Hex() = %q, want %q", bg.Hex(), "#808080")
+	}
+
+	// Stepped children exist and are referenceable
+	s1 := theme.Theme["step1"]
+	if s1.Hex() == "" {
+		t.Fatal("palette.base.l1 should exist")
+	}
+	s2 := theme.Theme["step2"]
+	if s2.Hex() == "" {
+		t.Fatal("palette.base.l2 should exist")
+	}
+	s3 := theme.Theme["step3"]
+	if s3.Hex() == "" {
+		t.Fatal("palette.base.l3 should exist")
+	}
+
+	// l1, l2, l3 should be different from each other (different lightness)
+	if s1.Hex() == s2.Hex() && s2.Hex() == s3.Hex() {
+		t.Error("stepped children should have different colors")
+	}
+}
+
+func TestPaletteTransformLightnessNested(t *testing.T) {
+	hcl := `
+palette {
+  highlight {
+    mid = "#808080"
+  }
+
+  transform {
+    lightness {
+      range = [0.3, 0.7]
+      steps = 2
+    }
+  }
+}
+
+theme {
+  a = palette.highlight.mid.l1
+  b = palette.highlight.mid.l2
+}
+` + completeANSI
+	path := writeTempHCL(t, hcl)
+	theme, err := Parse(path)
+	if err != nil {
+		t.Fatalf("Parse() error: %v", err)
+	}
+
+	a := theme.Theme["a"]
+	if a.Hex() == "" {
+		t.Fatal("palette.highlight.mid.l1 should exist")
+	}
+	b := theme.Theme["b"]
+	if b.Hex() == "" {
+		t.Fatal("palette.highlight.mid.l2 should exist")
+	}
+	if a.Hex() == b.Hex() {
+		t.Error("l1 and l2 should have different lightness values")
+	}
+}
+
+func TestPaletteNoTransform(t *testing.T) {
+	// Verify existing sampleHCL (no transform) still works, no stepped children
+	path := writeTempHCL(t, sampleHCL)
+	theme, err := Parse(path)
+	if err != nil {
+		t.Fatalf("Parse() error: %v", err)
+	}
+
+	// base should have no children (no transform applied)
+	baseNode := theme.Palette.Children["base"]
+	if baseNode == nil {
+		t.Fatal("palette.base should exist")
+	}
+	if baseNode.Children != nil {
+		t.Error("palette.base should have no children without transform block")
+	}
+}
+
 func TestPaletteForwardReferenceError(t *testing.T) {
 	hcl := `
 palette {
