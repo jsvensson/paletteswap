@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.7](https://github.com/jsvensson/paletteswap/compare/v0.1.6...v0.1.7) (2026-02-14)
+
+
+### Bug Fixes
+
+* **lsp:** resolve nested palette self-references in function args ([5bd8ccf](https://github.com/jsvensson/paletteswap/commit/5bd8ccfe4dc06ecca58ee40ba69f5cb4518f72ab)), closes [#72](https://github.com/jsvensson/paletteswap/issues/72)
+* **lsp:** resolve nested palette self-references in function args ([#72](https://github.com/jsvensson/paletteswap/issues/72)) ([#73](https://github.com/jsvensson/paletteswap/issues/73)) ([5bd8ccf](https://github.com/jsvensson/paletteswap/commit/5bd8ccfe4dc06ecca58ee40ba69f5cb4518f72ab))
+
 ## [0.1.6](https://github.com/jsvensson/paletteswap/compare/v0.1.5...v0.1.6) (2026-02-13)
 
 
