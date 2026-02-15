@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/jsvensson/paletteswap/internal/color"
 	"github.com/jsvensson/paletteswap/internal/theme"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // ParseResult holds the raw parsed theme data.
@@ -54,6 +55,76 @@ type ResolvedConfig struct {
 	Remain hcl.Body    `hcl:",remain"` // captures syntax for manual parsing
 }
 
+// LightnessTransform holds the parsed transform lightness configuration.
+type LightnessTransform struct {
+	Low   float64
+	High  float64
+	Steps int
+}
+
+// ParseTransformBlock extracts and parses a transform { lightness { ... } } block
+// from an *hclsyntax.Body. Returns (nil, nil) if no transform block is present.
+func ParseTransformBlock(body *hclsyntax.Body) (*LightnessTransform, error) {
+	// Find transform block
+	var transformBlock *hclsyntax.Block
+	for _, block := range body.Blocks {
+		if block.Type == "transform" {
+			transformBlock = block
+			break
+		}
+	}
+	if transformBlock == nil {
+		return nil, nil
+	}
+
+	// Find lightness block inside transform
+	var lightnessBlock *hclsyntax.Block
+	for _, block := range transformBlock.Body.Blocks {
+		if block.Type == "lightness" {
+			lightnessBlock = block
+			break
+		}
+	}
+	if lightnessBlock == nil {
+		return nil, fmt.Errorf("transform block has no lightness block")
+	}
+
+	// Parse range attribute
+	rangeAttr, ok := lightnessBlock.Body.Attributes["range"]
+	if !ok {
+		return nil, fmt.Errorf("lightness block missing 'range' attribute")
+	}
+	rangeVal, diags := rangeAttr.Expr.Value(nil)
+	if diags.HasErrors() {
+		return nil, fmt.Errorf("evaluating lightness range: %s", diags.Error())
+	}
+
+	lowVal := rangeVal.Index(cty.NumberIntVal(0))
+	highVal := rangeVal.Index(cty.NumberIntVal(1))
+	low, _ := lowVal.AsBigFloat().Float64()
+	high, _ := highVal.AsBigFloat().Float64()
+
+	// Parse steps attribute
+	stepsAttr, ok := lightnessBlock.Body.Attributes["steps"]
+	if !ok {
+		return nil, fmt.Errorf("lightness block missing 'steps' attribute")
+	}
+	stepsVal, diags := stepsAttr.Expr.Value(nil)
+	if diags.HasErrors() {
+		return nil, fmt.Errorf("evaluating lightness steps: %s", diags.Error())
+	}
+	stepsInt, _ := stepsVal.AsBigFloat().Int64()
+	if stepsInt < 1 {
+		return nil, fmt.Errorf("lightness steps must be >= 1, got %d", stepsInt)
+	}
+
+	return &LightnessTransform{
+		Low:   low,
+		High:  high,
+		Steps: int(stepsInt),
+	}, nil
+}
+
 // Loader handles two-pass HCL decoding with palette resolution.
 type Loader struct {
 	body    hcl.Body
@@ -90,6 +161,14 @@ func NewLoader(path string) (*Loader, error) {
 	palette := &color.Node{}
 	if err := parsePaletteBody(paletteBody, palette, palette); err != nil {
 		return nil, fmt.Errorf("parsing palette: %w", err)
+	}
+
+	transform, err := ParseTransformBlock(paletteBody)
+	if err != nil {
+		return nil, fmt.Errorf("parsing transform: %w", err)
+	}
+	if transform != nil {
+		color.ApplyLightnessSteps(palette, transform.Low, transform.High, transform.Steps)
 	}
 
 	return &Loader{
@@ -257,6 +336,9 @@ func parsePaletteBody(body *hclsyntax.Body, paletteRoot *color.Node, node *color
 		items = append(items, paletteItem{pos: attr.SrcRange.Start, attr: attr})
 	}
 	for _, block := range body.Blocks {
+		if block.Type == "transform" {
+			continue
+		}
 		items = append(items, paletteItem{pos: block.DefRange().Start, block: block})
 	}
 	sort.Slice(items, func(i, j int) bool {
