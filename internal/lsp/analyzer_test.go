@@ -501,6 +501,71 @@ ansi {
 	}
 }
 
+func TestAnalyze_PaletteTransformLightness(t *testing.T) {
+	content := `
+palette {
+  transform {
+    lightness {
+      range = [0.4, 0.8]
+      steps = 3
+    }
+  }
+
+  base = "#808080"
+}
+
+theme {
+  bg    = palette.base
+  bg_l1 = palette.base.l1
+  bg_l3 = palette.base.l3
+}
+
+ansi {
+  black   = "#000000"
+  red     = "#ff0000"
+  green   = "#00ff00"
+  yellow  = "#ffff00"
+  blue    = "#0000ff"
+  magenta = "#ff00ff"
+  cyan    = "#00ffff"
+  white   = "#ffffff"
+  bright_black   = "#808080"
+  bright_red     = "#ff8080"
+  bright_green   = "#80ff80"
+  bright_yellow  = "#ffff80"
+  bright_blue    = "#8080ff"
+  bright_magenta = "#ff80ff"
+  bright_cyan    = "#80ffff"
+  bright_white   = "#ffffff"
+}
+`
+	result := Analyze("test.pstheme", content)
+
+	// Should have no errors
+	for _, d := range result.Diagnostics {
+		if d.Severity != nil && *d.Severity == protocol.DiagnosticSeverityError {
+			t.Errorf("unexpected error: %s", d.Message)
+		}
+	}
+
+	// Palette should have stepped children
+	if result.Palette == nil {
+		t.Fatal("expected non-nil palette")
+	}
+	baseNode, ok := result.Palette.Children["base"]
+	if !ok {
+		t.Fatal("expected 'base' in palette")
+	}
+	if baseNode.Children == nil {
+		t.Fatal("expected 'base' to have stepped children")
+	}
+	for _, name := range []string{"l1", "l2", "l3"} {
+		if _, ok := baseNode.Children[name]; !ok {
+			t.Errorf("expected child %q in palette.base", name)
+		}
+	}
+}
+
 func TestAnalyze_ExplicitPaletteColorWarning(t *testing.T) {
 	content := `
 palette {

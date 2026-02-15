@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/jsvensson/paletteswap/internal/color"
+	"github.com/jsvensson/paletteswap/internal/parser"
 	"github.com/jsvensson/paletteswap/internal/theme"
 	protocol "github.com/tliron/glsp/protocol_3_16"
 	"github.com/zclconf/go-cty/cty"
@@ -151,6 +152,15 @@ func Analyze(filename, content string) *AnalysisResult {
 	if paletteBody, ok := blockBodies["palette"]; ok {
 		palette, _ := result.analyzeBlock(paletteBody, BlockTypes["palette"], ctx, "palette", nil)
 		result.Palette = palette
+
+		// Apply lightness transform if present
+		transform, err := parser.ParseTransformBlock(paletteBody)
+		if err != nil {
+			result.addError(hcl.Range{Filename: filename}, err.Error())
+		} else if transform != nil {
+			color.ApplyLightnessSteps(palette, transform.Low, transform.High, transform.Steps)
+		}
+
 		ctx.Variables["palette"] = theme.NodeToCty(palette)
 	}
 
@@ -574,6 +584,9 @@ func (r *AnalysisResult) analyzeBlock(body *hclsyntax.Body, blockType BlockType,
 	}
 
 	for _, block := range body.Blocks {
+		if block.Type == "transform" {
+			continue // handled separately for palette lightness stepping
+		}
 		if !blockType.SupportsNesting {
 			r.addError(block.DefRange(),
 				fmt.Sprintf("%s block does not support nesting", blockType.Name))
