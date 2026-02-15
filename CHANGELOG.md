@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.8](https://github.com/jsvensson/paletteswap/compare/v0.1.7...v0.1.8) (2026-02-15)
+
+
+### Features
+
+* **color:** add ApplyLightnessSteps for palette transform ([ca3a362](https://github.com/jsvensson/paletteswap/commit/ca3a3620eb3bd17791772cfc56b47742ba90b7c5))
+* **color:** add OKLCH color space conversion ([9945ae9](https://github.com/jsvensson/paletteswap/commit/9945ae94de0e64c5e10032e93468289a07b8a7f6))
+* **color:** add StepLightness for absolute OKLCH lightness ([06f1d2d](https://github.com/jsvensson/paletteswap/commit/06f1d2dca3ce19b8a1a746e85d86d95ccc943546))
+* **lsp:** add transform block support to analyzer ([23c54f0](https://github.com/jsvensson/paletteswap/commit/23c54f0d4374bdd0d38f53af467d001feef489ca))
+* **parser:** add transform block parsing for lightness stepping ([e4c56e2](https://github.com/jsvensson/paletteswap/commit/e4c56e232b01c61e856a6c568c4c61c64d547e4f))
+
+
+### Documentation
+
+* add lightness stepping design for [#78](https://github.com/jsvensson/paletteswap/issues/78) ([80549c0](https://github.com/jsvensson/paletteswap/commit/80549c0d07eae279b3a34574b1f4626724c16d00))
+* add lightness stepping implementation plan for [#78](https://github.com/jsvensson/paletteswap/issues/78) ([0f4efba](https://github.com/jsvensson/paletteswap/commit/0f4efba41af3bd89d2db2bd910b2143615f523f9))
+
 ## [0.1.7](https://github.com/jsvensson/paletteswap/compare/v0.1.6...v0.1.7) (2026-02-14)
 
 
