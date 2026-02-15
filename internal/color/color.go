@@ -51,6 +51,43 @@ func (n *Node) Lookup(path []string) (Color, error) {
 	return *current.Color, nil
 }
 
+// ApplyLightnessSteps walks the node tree and generates l1..lN children for every
+// leaf color node. Each step gets an evenly-spaced absolute OKLCH lightness value
+// between low and high. The original color is preserved as the node's own Color.
+func ApplyLightnessSteps(node *Node, low, high float64, steps int) {
+	if steps < 1 {
+		return
+	}
+	applyLightnessStepsRecursive(node, low, high, steps)
+}
+
+func applyLightnessStepsRecursive(node *Node, low, high float64, steps int) {
+	if node.Children != nil {
+		for _, child := range node.Children {
+			applyLightnessStepsRecursive(child, low, high, steps)
+		}
+		return
+	}
+
+	// Leaf node with a color — generate stepped children
+	if node.Color == nil {
+		return
+	}
+
+	node.Children = make(map[string]*Node, steps)
+	for i := range steps {
+		var lightness float64
+		if steps == 1 {
+			lightness = (low + high) / 2.0
+		} else {
+			lightness = low + (high-low)*float64(i)/float64(steps-1)
+		}
+		stepped := StepLightness(*node.Color, lightness)
+		name := fmt.Sprintf("l%d", i+1)
+		node.Children[name] = &Node{Color: &stepped}
+	}
+}
+
 // ParseHex parses a hex color string like "#eb6f92" into a Color.
 func ParseHex(s string) (Color, error) {
 	s = strings.TrimPrefix(s, "#")
