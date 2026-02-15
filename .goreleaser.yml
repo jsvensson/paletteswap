@@ -72,5 +72,6 @@ release:
   github:
     owner: jsvensson
     name: paletteswap
+  mode: append
   draft: false
   prerelease: auto
