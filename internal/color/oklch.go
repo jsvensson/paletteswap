@@ -102,6 +102,13 @@ func oklabToLinearRGB(L, a, b float64) (float64, float64, float64) {
 	return r, g, bl
 }
 
+// StepLightness returns a new Color with the given absolute OKLCH lightness,
+// preserving the original color's hue and chroma. Lightness should be in [0, 1].
+func StepLightness(c Color, lightness float64) Color {
+	_, chroma, hue := RGBToOKLCH(c)
+	return OKLCHToRGB(lightness, chroma, hue)
+}
+
 // clamp01 clamps a value to the [0, 1] range.
 func clamp01(v float64) float64 {
 	if v < 0 {

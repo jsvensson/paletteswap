@@ -125,6 +125,46 @@ func TestOKLCHToRGB_KnownColors(t *testing.T) {
 	}
 }
 
+func TestStepLightness(t *testing.T) {
+	gray := Color{128, 128, 128}
+
+	tests := []struct {
+		name      string
+		color     Color
+		lightness float64
+	}{
+		{"low lightness", gray, 0.3},
+		{"mid lightness", gray, 0.6},
+		{"high lightness", gray, 0.9},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := StepLightness(tt.color, tt.lightness)
+			gotL, _, _ := RGBToOKLCH(got)
+			if math.Abs(gotL-tt.lightness) > 0.02 {
+				t.Errorf("StepLightness(%v, %f) produced L=%f, want L≈%f",
+					tt.color, tt.lightness, gotL, tt.lightness)
+			}
+		})
+	}
+}
+
+func TestStepLightness_PreservesHueChroma(t *testing.T) {
+	red := Color{255, 0, 0}
+	_, origC, origH := RGBToOKLCH(red)
+
+	stepped := StepLightness(red, 0.8)
+	_, gotC, gotH := RGBToOKLCH(stepped)
+
+	if math.Abs(gotH-origH) > 1.0 {
+		t.Errorf("hue shifted: orig=%f, got=%f", origH, gotH)
+	}
+	if gotC > origC*1.1 {
+		t.Errorf("chroma increased unexpectedly: orig=%f, got=%f", origC, gotC)
+	}
+}
+
 func TestRGBToOKLCH_Roundtrip(t *testing.T) {
 	colors := []Color{
 		{255, 0, 0},
