@@ -273,6 +273,108 @@ func TestNode_Lookup(t *testing.T) {
 	}
 }
 
+func TestApplyLightnessSteps_FlatLeaf(t *testing.T) {
+	c, _ := ParseHex("#808080")
+	root := &Node{
+		Children: map[string]*Node{
+			"gray": {Color: &c},
+		},
+	}
+
+	ApplyLightnessSteps(root, 0.3, 0.9, 3)
+
+	if root.Children["gray"].Color == nil {
+		t.Fatal("expected gray to retain its color")
+	}
+	if root.Children["gray"].Color.Hex() != "#808080" {
+		t.Errorf("gray.Color = %q, want %q", root.Children["gray"].Color.Hex(), "#808080")
+	}
+
+	if root.Children["gray"].Children == nil {
+		t.Fatal("expected gray to have children after stepping")
+	}
+	for _, name := range []string{"l1", "l2", "l3"} {
+		child, ok := root.Children["gray"].Children[name]
+		if !ok {
+			t.Errorf("expected child %q", name)
+			continue
+		}
+		if child.Color == nil {
+			t.Errorf("%s has nil color", name)
+		}
+	}
+}
+
+func TestApplyLightnessSteps_Nested(t *testing.T) {
+	mid, _ := ParseHex("#403d52")
+	root := &Node{
+		Children: map[string]*Node{
+			"highlight": {
+				Children: map[string]*Node{
+					"mid": {Color: &mid},
+				},
+			},
+		},
+	}
+
+	ApplyLightnessSteps(root, 0.4, 0.8, 2)
+
+	midNode := root.Children["highlight"].Children["mid"]
+	if midNode.Children == nil {
+		t.Fatal("expected mid to have children")
+	}
+	if _, ok := midNode.Children["l1"]; !ok {
+		t.Error("expected l1")
+	}
+	if _, ok := midNode.Children["l2"]; !ok {
+		t.Error("expected l2")
+	}
+}
+
+func TestApplyLightnessSteps_PreservesOriginalColor(t *testing.T) {
+	c, _ := ParseHex("#eb6f92")
+	root := &Node{
+		Children: map[string]*Node{
+			"love": {Color: &c},
+		},
+	}
+
+	ApplyLightnessSteps(root, 0.5, 0.9, 3)
+
+	got, err := root.Lookup([]string{"love"})
+	if err != nil {
+		t.Fatalf("Lookup(love) error: %v", err)
+	}
+	if got.Hex() != "#eb6f92" {
+		t.Errorf("love = %q, want %q", got.Hex(), "#eb6f92")
+	}
+}
+
+func TestApplyLightnessSteps_SkipsNamespaceOnly(t *testing.T) {
+	child, _ := ParseHex("#000000")
+	root := &Node{
+		Children: map[string]*Node{
+			"group": {
+				Children: map[string]*Node{
+					"inner": {Color: &child},
+				},
+			},
+		},
+	}
+
+	ApplyLightnessSteps(root, 0.3, 0.9, 3)
+
+	if _, ok := root.Children["group"].Children["l1"]; ok {
+		t.Error("namespace-only group should not get lightness steps")
+	}
+	if root.Children["group"].Children["inner"].Children == nil {
+		t.Fatal("expected inner to have children")
+	}
+	if _, ok := root.Children["group"].Children["inner"].Children["l1"]; !ok {
+		t.Error("expected inner.l1")
+	}
+}
+
 func TestColor_HexBareAlpha(t *testing.T) {
 	tests := []struct {
 		name     string
