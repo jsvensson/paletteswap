@@ -417,8 +417,6 @@ ansi {
 		if cl.IsRef {
 			hasRef = true
 		} else {
-			hasLiteral = false
-			// Actually even hex literals in palette are not refs
 			hasLiteral = true
 		}
 		t.Logf("color %s at line %d (ref=%v)", cl.Color.Hex(), cl.Range.Start.Line, cl.IsRef)
