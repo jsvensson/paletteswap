@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.9](https://github.com/jsvensson/paletteswap/compare/v0.1.8...v0.1.9) (2026-02-18)
+
+
+### Bug Fixes
+
+* LLM code ([0247166](https://github.com/jsvensson/paletteswap/commit/02471662edcab948437f06bf698400af75b0946d))
+* LLM doing LLM things ([#82](https://github.com/jsvensson/paletteswap/issues/82)) ([0247166](https://github.com/jsvensson/paletteswap/commit/02471662edcab948437f06bf698400af75b0946d))
+
 ## [0.1.8](https://github.com/jsvensson/paletteswap/compare/v0.1.7...v0.1.8) (2026-02-15)
 
 
