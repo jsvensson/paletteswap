@@ -7,7 +7,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/tliron/commonlog v0.2.21
 	github.com/tliron/glsp v0.2.2
-	github.com/zclconf/go-cty v1.17.0
+	github.com/zclconf/go-cty v1.18.0
 )
 
 require (
